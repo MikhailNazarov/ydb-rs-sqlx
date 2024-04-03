@@ -1,10 +1,15 @@
-use std::str::FromStr;
+mod connection_impl;
 
+use std::{str::FromStr, time::Duration};
+
+use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
 
 use super::database::Ydb;
 
-pub struct YdbConnection {}
+pub struct YdbConnection {
+    client: ydb::Client,
+}
 
 impl Connection for YdbConnection {
     type Database = Ydb;
@@ -12,7 +17,7 @@ impl Connection for YdbConnection {
     type Options = YdbConnectOptions;
 
     fn close(self) -> futures_util::future::BoxFuture<'static, Result<(), sqlx_core::Error>> {
-        todo!()
+        Box::pin(future::ready(Ok(())))
     }
 
     fn close_hard(self) -> futures_util::future::BoxFuture<'static, Result<(), sqlx_core::Error>> {
@@ -40,16 +45,19 @@ impl Connection for YdbConnection {
     }
 
     fn flush(&mut self) -> futures_util::future::BoxFuture<'_, Result<(), sqlx_core::Error>> {
-        todo!()
+        Box::pin(future::ready(Ok(())))
     }
 
     fn should_flush(&self) -> bool {
-        todo!()
+        false
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct YdbConnectOptions {}
+pub struct YdbConnectOptions {
+    connection_string: String,
+    connection_timeout: Duration,
+}
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
@@ -64,7 +72,10 @@ impl ConnectOptions for YdbConnectOptions {
     where
         Self::Connection: Sized,
     {
-        todo!()
+        Box::pin(async move {
+            let connection = YdbConnection::establish(self).await?;
+            Ok(connection)
+        })
     }
 
     fn log_statements(self, level: tracing::log::LevelFilter) -> Self {

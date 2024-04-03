@@ -2,6 +2,7 @@ pub mod arguments;
 pub mod column;
 pub mod connection;
 pub mod database;
+pub mod error;
 pub mod executor;
 pub mod query;
 pub mod row;

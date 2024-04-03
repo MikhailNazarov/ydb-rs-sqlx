@@ -2627,9 +2627,11 @@ dependencies = [
 name = "ydb-rs-sqlx"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "futures-util",
  "itertools 0.12.1",
  "sqlx-core",
+ "thiserror",
  "tracing",
  "url",
  "ydb",
