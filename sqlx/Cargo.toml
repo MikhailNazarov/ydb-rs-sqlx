@@ -1,0 +1,17 @@
+[package]
+name = "ydb-rs-sqlx"
+version = "0.1.0"
+edition = "2021"
+authors = ["mikhail <mikhail.a.nazarov@yandex.ru>"]
+license = "Apache-2.0"
+repository = "https://github.com/MikhailNazarov/ydb-rs-sqlx"
+rust-version = "1.77"
+description = "Sqlx intergration for ydb-rs-sdk"
+
+[dependencies]
+futures-util = "0.3"
+itertools="0.12"
+sqlx-core = {version = "0.7"}
+tracing="0.1"
+ydb = "0.8"
+url = "2.2"
