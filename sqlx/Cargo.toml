@@ -15,5 +15,12 @@ futures-util = "0.3"
 itertools="0.12"
 sqlx-core = {version = "0.7"}
 tracing="0.1"
-ydb = "0.8"
+ydb = {git = "https://github.com/MikhailNazarov/ydb-rs-sdk.git", branch = "cred_from_env"}
 url = "2.2"
+futures-core="0.3"
+
+
+[dev-dependencies]
+tokio = { version = "1.22", features = ["full"] }
+sqlx = {version = "0.7", features = ["runtime-tokio-rustls"] }
+tracing-subscriber = "0.3"

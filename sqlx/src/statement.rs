@@ -1,20 +1,40 @@
-use sqlx_core::statement::Statement;
+use std::{borrow::Cow, sync::Arc};
+
+use itertools::Either;
+use sqlx_core::{column::ColumnIndex, impl_statement_query, statement::Statement, Error, HashMap};
+
+use crate::{arguments::YdbArguments, column::YdbColumn, typeinfo::YdbTypeInfo};
 
 use super::database::Ydb;
 
-pub struct YdbStatement {}
+pub struct YdbStatement<'q> {
+    pub(crate) sql: Cow<'q, str>,
+    pub(crate) metadata: Arc<YdbStatementMetadata>,
+}
 
-impl<'q> Statement<'q> for YdbStatement {
+#[derive(Debug, Default)]
+pub(crate) struct YdbStatementMetadata {
+    pub(crate) columns: Vec<YdbColumn>,
+    // This `Arc` is not redundant; it's used to avoid deep-copying this map for the `Any` backend.
+    // See `sqlx-postgres/src/any.rs`
+    pub(crate) column_names: Arc<HashMap<String, usize>>,
+    pub(crate) parameters: Vec<YdbTypeInfo>,
+}
+
+impl<'q> Statement<'q> for YdbStatement<'q> {
     type Database = Ydb;
 
     fn to_owned(
         &self,
     ) -> <Self::Database as sqlx_core::database::HasStatement<'static>>::Statement {
-        todo!()
+        YdbStatement::<'static> {
+            sql: Cow::Owned(self.sql.clone().into_owned()),
+            metadata: self.metadata.clone(),
+        }
     }
 
     fn sql(&self) -> &str {
-        todo!()
+        &self.sql
     }
 
     fn parameters(
@@ -22,89 +42,23 @@ impl<'q> Statement<'q> for YdbStatement {
     ) -> Option<
         itertools::Either<&[<Self::Database as sqlx_core::database::Database>::TypeInfo], usize>,
     > {
-        todo!()
+        Some(Either::Left(&self.metadata.parameters))
     }
 
     fn columns(&self) -> &[<Self::Database as sqlx_core::database::Database>::Column] {
-        todo!()
+        &self.metadata.columns
     }
 
-    fn query(
-        &self,
-    ) -> sqlx_core::query::Query<
-        '_,
-        Self::Database,
-        <Self::Database as sqlx_core::database::HasArguments<'_>>::Arguments,
-    > {
-        todo!()
-    }
+    impl_statement_query!(YdbArguments);
+}
 
-    fn query_with<'s, A>(&'s self, arguments: A) -> sqlx_core::query::Query<'s, Self::Database, A>
-    where
-        A: sqlx_core::arguments::IntoArguments<'s, Self::Database>,
-    {
-        todo!()
-    }
-
-    fn query_as<O>(
-        &self,
-    ) -> sqlx_core::query_as::QueryAs<
-        '_,
-        Self::Database,
-        O,
-        <Self::Database as sqlx_core::database::HasArguments<'_>>::Arguments,
-    >
-    where
-        O: for<'r> sqlx_core::from_row::FromRow<
-            'r,
-            <Self::Database as sqlx_core::database::Database>::Row,
-        >,
-    {
-        todo!()
-    }
-
-    fn query_as_with<'s, O, A>(
-        &'s self,
-        arguments: A,
-    ) -> sqlx_core::query_as::QueryAs<'s, Self::Database, O, A>
-    where
-        O: for<'r> sqlx_core::from_row::FromRow<
-            'r,
-            <Self::Database as sqlx_core::database::Database>::Row,
-        >,
-        A: sqlx_core::arguments::IntoArguments<'s, Self::Database>,
-    {
-        todo!()
-    }
-
-    fn query_scalar<O>(
-        &self,
-    ) -> sqlx_core::query_scalar::QueryScalar<
-        '_,
-        Self::Database,
-        O,
-        <Self::Database as sqlx_core::database::HasArguments<'_>>::Arguments,
-    >
-    where
-        (O,): for<'r> sqlx_core::from_row::FromRow<
-            'r,
-            <Self::Database as sqlx_core::database::Database>::Row,
-        >,
-    {
-        todo!()
-    }
-
-    fn query_scalar_with<'s, O, A>(
-        &'s self,
-        arguments: A,
-    ) -> sqlx_core::query_scalar::QueryScalar<'s, Self::Database, O, A>
-    where
-        (O,): for<'r> sqlx_core::from_row::FromRow<
-            'r,
-            <Self::Database as sqlx_core::database::Database>::Row,
-        >,
-        A: sqlx_core::arguments::IntoArguments<'s, Self::Database>,
-    {
-        todo!()
+impl ColumnIndex<YdbStatement<'_>> for &'_ str {
+    fn index(&self, statement: &YdbStatement<'_>) -> Result<usize, Error> {
+        statement
+            .metadata
+            .column_names
+            .get(*self)
+            .ok_or_else(|| Error::ColumnNotFound((*self).into()))
+            .map(|v| *v)
     }
 }

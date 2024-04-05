@@ -1,9 +1,10 @@
 mod connection_impl;
 
-use std::{str::FromStr, time::Duration};
+use std::{str::FromStr, sync::Arc, time::Duration};
 
 use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
+use ydb::{AnonymousCredentials, Credentials, FromEnvCredentials, YdbError};
 
 use super::database::Ydb;
 
@@ -40,9 +41,7 @@ impl Connection for YdbConnection {
         todo!()
     }
 
-    fn shrink_buffers(&mut self) {
-        todo!()
-    }
+    fn shrink_buffers(&mut self) {}
 
     fn flush(&mut self) -> futures_util::future::BoxFuture<'_, Result<(), sqlx_core::Error>> {
         Box::pin(future::ready(Ok(())))
@@ -57,13 +56,14 @@ impl Connection for YdbConnection {
 pub struct YdbConnectOptions {
     connection_string: String,
     connection_timeout: Duration,
+    credentials: Arc<Box<dyn Credentials>>,
 }
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
 
     fn from_url(url: &url::Url) -> Result<Self, sqlx_core::Error> {
-        todo!()
+        Self::from_str(url.as_str())
     }
 
     fn connect(
@@ -91,10 +91,22 @@ impl ConnectOptions for YdbConnectOptions {
     }
 }
 
+impl YdbConnectOptions {
+    fn with_credentials_from_env(mut self) -> Result<Self, YdbError> {
+        let cred = FromEnvCredentials::new()?;
+        self.credentials = Arc::new(Box::new(cred));
+        Ok(self)
+    }
+}
+
 impl FromStr for YdbConnectOptions {
     type Err = sqlx_core::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+        Ok(YdbConnectOptions {
+            connection_string: s.to_owned(),
+            connection_timeout: Duration::from_secs(10),
+            credentials: Arc::new(Box::new(AnonymousCredentials::new())),
+        })
     }
 }

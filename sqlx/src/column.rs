@@ -1,22 +1,28 @@
 use sqlx_core::column::Column;
 
+use crate::typeinfo::YdbTypeInfo;
+
 use super::database::Ydb;
 
 #[derive(Debug)]
-pub struct YdbColumn {}
+pub struct YdbColumn {
+    pub(crate) name: String,
+    pub(crate) ordinal: usize,
+    pub(crate) type_info: YdbTypeInfo,
+}
 
 impl Column for YdbColumn {
     type Database = Ydb;
 
     fn ordinal(&self) -> usize {
-        todo!()
+        self.ordinal
     }
 
     fn name(&self) -> &str {
-        todo!()
+        &self.name
     }
 
     fn type_info(&self) -> &<Self::Database as sqlx_core::database::Database>::TypeInfo {
-        todo!()
+        &self.type_info
     }
 }

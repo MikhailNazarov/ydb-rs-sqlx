@@ -1,4 +1,8 @@
 use sqlx_core::database::{Database, HasArguments, HasStatement};
+use sqlx_core::executor::Executor;
+use sqlx_core::pool::Pool;
+
+use crate::YdbPool;
 
 use super::{
     arguments::{YdbArgumentBuffer, YdbArguments},
@@ -38,7 +42,7 @@ impl Database for Ydb {
 impl<'q> HasStatement<'q> for Ydb {
     type Database = Ydb;
 
-    type Statement = YdbStatement;
+    type Statement = YdbStatement<'q>;
 }
 
 impl<'q> HasArguments<'q> for Ydb {
