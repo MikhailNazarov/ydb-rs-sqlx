@@ -1,19 +1,24 @@
-use std::ops::{Deref, DerefMut};
+use std::collections::HashMap;
 
-use sqlx_core::arguments::Arguments;
+use rustring_builder::StringBuilder;
+use sqlx_core::{
+    arguments::Arguments,
+    encode::{Encode, IsNull},
+    type_info::TypeInfo,
+};
 
 use crate::typeinfo::YdbTypeInfo;
 
 use super::database::Ydb;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 #[allow(unused)]
 pub struct YdbArguments {
     // Types of each bind parameter
-    pub(crate) types: Vec<YdbTypeInfo>,
+    types: Vec<YdbTypeInfo>,
 
     // Buffer of encoded bind parameters
-    pub(crate) buffer: YdbArgumentBuffer,
+    buffer: YdbArgumentBuffer,
 }
 
 impl<'q> Arguments<'q> for YdbArguments {
@@ -23,42 +28,107 @@ impl<'q> Arguments<'q> for YdbArguments {
         //
     }
 
-    fn add<T>(&mut self, _value: T)
+    fn add<T>(&mut self, value: T)
     where
         T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
     {
+        _ = value.encode(&mut self.buffer);
         self.types.push(T::type_info());
     }
 }
 
+impl YdbArguments {
+    pub(crate) fn into_iter(self) -> impl Iterator<Item = Argument> {
+        self.buffer.arguments.into_iter()
+    }
+}
+
 #[allow(unused)]
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct YdbArgumentBuffer {
-    // buffer: Vec<u8>,
+    arguments: Vec<Argument>,
+    index: i32,
+}
 
-    // Number of arguments
-    count: usize,
+impl YdbArgumentBuffer {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+}
 
-    // Whenever an `Encode` impl needs to defer some work until after we resolve parameter types
-    // it can use `patch`.
-    //
-    // This currently is only setup to be useful if there is a *fixed-size* slot that needs to be
-    // tweaked from the input type. However, that's the only use case we currently have.
-    //
-    patches: Vec<(
-        usize, // offset
-        usize, // argument index
-        Box<dyn Fn(&mut [u8], &YdbTypeInfo) + 'static + Send + Sync>,
-    )>,
+#[derive(Clone, Debug)]
+pub(crate) struct Argument {
+    name: String,
+    value: ydb::Value,
+    type_info: YdbTypeInfo,
+}
 
-    // Whenever an `Encode` impl encounters a `YdbTypeInfo` object that does not have an OID
-    // It pushes a "hole" that must be patched later.
-    //
-    // The hole is a `usize` offset into the buffer with the type name that should be resolved
-    // This is done for Records and Arrays as the OID is needed well before we are in an async
-    // function and can just ask ydb.
-    //
-    type_holes: Vec<(usize, String)>, // Vec<{ offset, type_name }>
+impl Argument {
+    pub(crate) fn new(name: String, value: ydb::Value, type_info: YdbTypeInfo) -> Self {
+        Self {
+            name,
+            value,
+            type_info,
+        }
+    }
+
+    pub(crate) fn declare(&self, sb: &mut StringBuilder) {
+        sb.append(format!(
+            "DECLARE {} as {};\n",
+            self.name,
+            self.type_info.name()
+        ));
+    }
+
+    pub(crate) fn add_to_params(&self, params: &mut HashMap<String, ydb::Value>) {
+        params.insert(self.name(), self.value.clone());
+    }
+
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl YdbArgumentBuffer {
+    pub(crate) fn push(&mut self, value: ydb::Value, type_info: YdbTypeInfo) {
+        self.index = self.index + 1;
+        self.arguments
+            .push(Argument::new(self.index, value, type_info));
+    }
+
+    pub(crate) fn push_named(&mut self, name: String, value: ydb::Value, type_info: YdbTypeInfo) {
+        self.index = self.index + 1;
+        self.arguments
+            .push(Argument::new(self.index, value, type_info));
+    }
+}
+
+pub struct NamedArgument<T> {
+    name: String,
+    value: T,
+}
+
+pub fn with_name<T>(name: impl Into<String>, value: T) -> NamedArgument<T> {
+    NamedArgument {
+        name: name.into(),
+        value,
+    }
+}
+
+impl<'q, T> Encode<'q, Ydb> for NamedArgument<T>
+where
+    T: Clone,
+    ydb::Value: From<T>,
+{
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> sqlx_core::encode::IsNull {
+        let value = ydb::Value::from(self.value.clone());
+        let is_null = match &value {
+            ydb::Value::Null => IsNull::Yes,
+            _ => IsNull::No,
+        };
+        buf.push_named(self.name.clone(), value, YdbTypeInfo(self.value));
+        is_null
+    }
 }
 
 /*

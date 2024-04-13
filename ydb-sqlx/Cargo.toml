@@ -18,3 +18,5 @@ tracing = "0.1"
 ydb = { path = "../../ydb-rs-sdk/ydb" }
 url = "2.2"
 futures-core = "0.3"
+futures = "0.3"
+rustring_builder = "0.2"

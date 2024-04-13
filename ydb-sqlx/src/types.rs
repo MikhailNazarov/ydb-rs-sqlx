@@ -9,7 +9,7 @@ use sqlx_core::{
 use ydb::{Bytes, YdbError};
 
 use crate::{
-    arguments::YdbArgumentBuffer,
+    arguments::{Argument, YdbArgumentBuffer},
     database::Ydb,
     typeinfo::{DataType, YdbTypeInfo},
     value::YdbValueRef,
@@ -27,7 +27,13 @@ macro_rules! ydb_type {
         #[allow(unused)]
         impl Encode<'_, Ydb> for $native_type {
             fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
-                todo!()
+                let value = ydb::Value::from(self.clone());
+                let is_null = match &value {
+                    ydb::Value::Null => IsNull::Yes,
+                    _ => IsNull::No,
+                };
+                buf.push(value, YdbTypeInfo($ydb_type_first));
+                is_null
             }
         }
 

@@ -1,9 +1,15 @@
+use std::collections::HashMap;
+
 use futures_core::stream::BoxStream;
 
+use futures::StreamExt;
+use itertools::Either;
+use rustring_builder::StringBuilder;
 use sqlx_core::executor::Execute;
 use sqlx_core::executor::Executor;
 
 use sqlx_core::Error;
+use tracing::info;
 use ydb::Query;
 use ydb::YdbOrCustomerError;
 
@@ -20,19 +26,77 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
 
     fn fetch_many<'e, 'q: 'e, E: 'q>(
         self,
-        _query: E,
+        mut query: E,
     ) -> BoxStream<'e, Result<sqlx_core::Either<YdbQueryResult, YdbRow>, Error>>
     where
         'c: 'e,
         E: Execute<'q, Ydb>,
     {
-        todo!()
+        let result = Box::pin(async move {
+            let mut sb = StringBuilder::new();
+            let mut params = HashMap::new();
+
+            if let Some(arguments) = query.take_arguments() {
+                for arg in arguments.into_iter() {
+                    arg.declare(&mut sb);
+                    arg.add_to_params(&mut params);
+                }
+                sb.append_line("");
+            }
+
+            sb.append(query.sql());
+
+            let sql = sb.to_string();
+
+            let mut query = Query::new(sql);
+            if !params.is_empty() {
+                query = query.with_params(params);
+            }
+
+            self.client
+                .table_client()
+                .retry_transaction(|t| async {
+                    let mut t = t;
+                    let result = t.query(query.clone()).await?;
+
+                    Ok(Some(result.into_results()))
+                })
+                .await
+                .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+        });
+        let stream = futures::stream::once(result)
+            .map(|r| {
+                let mut err = Vec::with_capacity(1);
+
+                let results = match r {
+                    Ok(rs) => rs.unwrap_or_default(),
+                    Err(e) => {
+                        err.push(Err(e));
+                        vec![]
+                    }
+                };
+
+                let rows = results
+                    .into_iter()
+                    .map(|rs| rs.rows().into_iter())
+                    .flatten()
+                    .map(|r| match YdbRow::from(r) {
+                        Ok(r) => Ok(Either::Right(r)),
+                        Err(e) => Err(e),
+                    })
+                    .chain(err);
+
+                futures::stream::iter(rows)
+            })
+            .flatten();
+
+        Box::pin(stream)
     }
 
     fn fetch_optional<'e, 'q: 'e, E: 'q>(
         self,
         query: E,
-    ) -> futures_core::future::BoxFuture<'e, Result<Option<YdbRow>, Error>>
+    ) -> futures::future::BoxFuture<'e, Result<Option<YdbRow>, Error>>
     where
         'c: 'e,
         E: Execute<'q, Ydb>,
@@ -44,9 +108,9 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                 .retry_transaction(|t| async {
                     //YdbRow::from(row)
                     let mut t = t;
-                    let x = t.query(query.clone()).await?;
+                    let result = t.query(query.clone()).await?;
 
-                    if let Some(row) = x.into_only_row().ok() {
+                    if let Some(row) = result.into_only_row().ok() {
                         let row = YdbRow::from(row).map_err(|e| YdbOrCustomerError::from_err(e))?;
                         Ok(Some(row))
                     } else {
@@ -62,7 +126,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         self,
         _sql: &'q str,
         _parameters: &'e [YdbTypeInfo],
-    ) -> futures_core::future::BoxFuture<'e, Result<YdbStatement<'q>, Error>>
+    ) -> futures::future::BoxFuture<'e, Result<YdbStatement<'q>, Error>>
     where
         'c: 'e,
     {
@@ -72,7 +136,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     fn describe<'e, 'q: 'e>(
         self,
         _sql: &'q str,
-    ) -> futures_core::future::BoxFuture<'e, Result<sqlx_core::describe::Describe<Ydb>, Error>>
+    ) -> futures::future::BoxFuture<'e, Result<sqlx_core::describe::Describe<Ydb>, Error>>
     where
         'c: 'e,
     {
