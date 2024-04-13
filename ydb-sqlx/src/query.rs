@@ -16,3 +16,13 @@ impl Extend<YdbQueryResult> for YdbQueryResult {
         }
     }
 }
+
+// #[cfg(feature = "any")]
+// impl From<YdbQueryResult> for crate::any::AnyQueryResult {
+//     fn from(done: YdbQueryResult) -> Self {
+//         crate::any::AnyQueryResult {
+//             rows_affected: done.rows_affected,
+//             last_insert_id: None,
+//         }
+//     }
+// }

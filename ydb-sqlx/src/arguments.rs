@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use sqlx_core::arguments::Arguments;
 
 use crate::typeinfo::YdbTypeInfo;
@@ -5,6 +7,7 @@ use crate::typeinfo::YdbTypeInfo;
 use super::database::Ydb;
 
 #[derive(Default)]
+#[allow(unused)]
 pub struct YdbArguments {
     // Types of each bind parameter
     pub(crate) types: Vec<YdbTypeInfo>,
@@ -16,21 +19,19 @@ pub struct YdbArguments {
 impl<'q> Arguments<'q> for YdbArguments {
     type Database = Ydb;
 
-    fn reserve(&mut self, additional: usize, size: usize) {
-        todo!()
+    fn reserve(&mut self, _additional: usize, _size: usize) {
+        //todo:
     }
 
-    fn add<T>(&mut self, value: T)
+    fn add<T>(&mut self, _value: T)
     where
-        T: 'q
-            + Send
-            + sqlx_core::encode::Encode<'q, Self::Database>
-            + sqlx_core::types::Type<Self::Database>,
+        T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
     {
-        todo!()
+        self.types.push(T::type_info());
     }
 }
 
+#[allow(unused)]
 #[derive(Default)]
 pub struct YdbArgumentBuffer {
     buffer: Vec<u8>,
@@ -55,7 +56,23 @@ pub struct YdbArgumentBuffer {
     //
     // The hole is a `usize` offset into the buffer with the type name that should be resolved
     // This is done for Records and Arrays as the OID is needed well before we are in an async
-    // function and can just ask postgres.
+    // function and can just ask ydb.
     //
     type_holes: Vec<(usize, String)>, // Vec<{ offset, type_name }>
+}
+
+impl Deref for YdbArgumentBuffer {
+    type Target = Vec<u8>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.buffer
+    }
+}
+
+impl DerefMut for YdbArgumentBuffer {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.buffer
+    }
 }

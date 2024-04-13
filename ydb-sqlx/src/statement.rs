@@ -24,9 +24,7 @@ pub(crate) struct YdbStatementMetadata {
 impl<'q> Statement<'q> for YdbStatement<'q> {
     type Database = Ydb;
 
-    fn to_owned(
-        &self,
-    ) -> <Self::Database as sqlx_core::database::HasStatement<'static>>::Statement {
+    fn to_owned(&self) -> YdbStatement<'static> {
         YdbStatement::<'static> {
             sql: Cow::Owned(self.sql.clone().into_owned()),
             metadata: self.metadata.clone(),
@@ -37,15 +35,11 @@ impl<'q> Statement<'q> for YdbStatement<'q> {
         &self.sql
     }
 
-    fn parameters(
-        &self,
-    ) -> Option<
-        itertools::Either<&[<Self::Database as sqlx_core::database::Database>::TypeInfo], usize>,
-    > {
+    fn parameters(&self) -> Option<itertools::Either<&[YdbTypeInfo], usize>> {
         Some(Either::Left(&self.metadata.parameters))
     }
 
-    fn columns(&self) -> &[<Self::Database as sqlx_core::database::Database>::Column] {
+    fn columns(&self) -> &[YdbColumn] {
         &self.metadata.columns
     }
 

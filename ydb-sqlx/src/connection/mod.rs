@@ -1,15 +1,23 @@
 mod connection_impl;
+mod executor;
 
+use std::fmt;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
+use super::database::Ydb;
 use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
-use ydb::{AnonymousCredentials, Credentials, FromEnvCredentials, YdbError};
+use ydb::{AnonymousCredentials, FromEnvCredentials};
+use ydb::{Credentials, YdbError};
 
-use super::database::Ydb;
-
+#[allow(unused)]
 pub struct YdbConnection {
     client: ydb::Client,
+}
+impl fmt::Debug for YdbConnection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("YdbConnection")
+    }
 }
 
 impl Connection for YdbConnection {
@@ -26,7 +34,8 @@ impl Connection for YdbConnection {
     }
 
     fn ping(&mut self) -> futures_util::future::BoxFuture<'_, Result<(), sqlx_core::Error>> {
-        todo!()
+        //todo: validate connection
+        Box::pin(future::ready(Ok(())))
     }
 
     fn begin(
@@ -52,6 +61,7 @@ impl Connection for YdbConnection {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct YdbConnectOptions {
     connection_string: String,
@@ -78,20 +88,21 @@ impl ConnectOptions for YdbConnectOptions {
         })
     }
 
-    fn log_statements(self, level: tracing::log::LevelFilter) -> Self {
+    fn log_statements(self, _level: tracing::log::LevelFilter) -> Self {
         todo!()
     }
 
     fn log_slow_statements(
         self,
-        level: tracing::log::LevelFilter,
-        duration: std::time::Duration,
+        _level: tracing::log::LevelFilter,
+        _duration: std::time::Duration,
     ) -> Self {
         todo!()
     }
 }
 
 impl YdbConnectOptions {
+    #[allow(unused)]
     fn with_credentials_from_env(mut self) -> Result<Self, YdbError> {
         let cred = FromEnvCredentials::new()?;
         self.credentials = Arc::new(Box::new(cred));
@@ -108,5 +119,11 @@ impl FromStr for YdbConnectOptions {
             connection_timeout: Duration::from_secs(10),
             credentials: Arc::new(Box::new(AnonymousCredentials::new())),
         })
+    }
+}
+
+impl AsMut<YdbConnection> for YdbConnection {
+    fn as_mut(&mut self) -> &mut YdbConnection {
+        self
     }
 }

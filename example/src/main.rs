@@ -1,10 +1,10 @@
 use std::{env, str::FromStr};
 
 use tracing::{info, Level};
-use ydb_rs_sqlx::{database::Ydb, YdbPoolOptions};
+use ydb_rs_sqlx::YdbPoolOptions;
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx_core::error::Error> {
+async fn main() -> Result<(), sqlx::error::Error> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
     // let options = YdbConnectOptions::from_str(&connection_string)?;
@@ -16,13 +16,12 @@ async fn main() -> Result<(), sqlx_core::error::Error> {
         .connect(&connection_string)
         .await?;
     info!("connected");
+    let q = sqlx::query_as("SELECT 1+1");
+    //let qq = q.bind(150_i64);
     // Make a simple query to return the given parameter (use a question mark `?` instead of `$1` for MySQL/MariaDB)
-    let row: (i64,) = sqlx::query_as("SELECT $1")
-        .bind(150_i64)
-        .fetch_one(&pool)
-        .await?;
+    let row: (i32,) = q.fetch_one(&pool).await?;
 
-    assert_eq!(row.0, 150);
+    assert_eq!(row.0, 2);
 
     Ok(())
 }

@@ -1,8 +1,6 @@
-use sqlx_core::database::{Database, HasArguments, HasStatement};
-use sqlx_core::executor::Executor;
-use sqlx_core::pool::Pool;
+use sqlx_core::database::{Database, HasArguments, HasStatement, HasStatementCache, HasValueRef};
 
-use crate::YdbPool;
+use crate::value::YdbValueRef;
 
 use super::{
     arguments::{YdbArgumentBuffer, YdbArguments},
@@ -38,6 +36,19 @@ impl Database for Ydb {
 
     const URL_SCHEMES: &'static [&'static str] = &["grpcs"];
 }
+impl<'r> HasValueRef<'r> for Ydb {
+    type Database = Ydb;
+
+    type ValueRef = YdbValueRef<'r>;
+}
+
+impl HasArguments<'_> for Ydb {
+    type Database = Ydb;
+
+    type Arguments = YdbArguments;
+
+    type ArgumentBuffer = YdbArgumentBuffer;
+}
 
 impl<'q> HasStatement<'q> for Ydb {
     type Database = Ydb;
@@ -45,10 +56,4 @@ impl<'q> HasStatement<'q> for Ydb {
     type Statement = YdbStatement<'q>;
 }
 
-impl<'q> HasArguments<'q> for Ydb {
-    type Database = Ydb;
-
-    type Arguments = YdbArguments;
-
-    type ArgumentBuffer = YdbArgumentBuffer;
-}
+impl HasStatementCache for Ydb {}

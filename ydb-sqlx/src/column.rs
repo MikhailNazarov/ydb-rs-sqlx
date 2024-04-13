@@ -6,9 +6,18 @@ use super::database::Ydb;
 
 #[derive(Debug)]
 pub struct YdbColumn {
-    pub(crate) name: String,
-    pub(crate) ordinal: usize,
-    pub(crate) type_info: YdbTypeInfo,
+    name: String,
+    ordinal: usize,
+    type_info: YdbTypeInfo,
+}
+impl YdbColumn {
+    pub(crate) fn new(column: ydb::Column) -> Self {
+        Self {
+            name: column.name,
+            ordinal: column.ordinal,
+            type_info: YdbTypeInfo::new(column.value_type),
+        }
+    }
 }
 
 impl Column for YdbColumn {
@@ -22,7 +31,7 @@ impl Column for YdbColumn {
         &self.name
     }
 
-    fn type_info(&self) -> &<Self::Database as sqlx_core::database::Database>::TypeInfo {
+    fn type_info(&self) -> &YdbTypeInfo {
         &self.type_info
     }
 }
