@@ -4,7 +4,7 @@ use tracing::{info, Level};
 use ydb_rs_sqlx::YdbPoolOptions;
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::error::Error> {
+async fn main2() -> Result<(), sqlx::error::Error> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
     // let options = YdbConnectOptions::from_str(&connection_string)?;
@@ -21,6 +21,18 @@ async fn main() -> Result<(), sqlx::error::Error> {
     // Make a simple query to return the given parameter (use a question mark `?` instead of `$1` for MySQL/MariaDB)
     let row: (i32,) = q.fetch_one(&pool).await?;
 
+    assert_eq!(row.0, 2);
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), sqlx::error::Error> {
+    init_logs();
+    let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
+
+    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
+    let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
     Ok(())

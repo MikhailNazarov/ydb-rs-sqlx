@@ -20,7 +20,7 @@ impl<'q> Arguments<'q> for YdbArguments {
     type Database = Ydb;
 
     fn reserve(&mut self, _additional: usize, _size: usize) {
-        //todo:
+        //
     }
 
     fn add<T>(&mut self, _value: T)
@@ -34,7 +34,7 @@ impl<'q> Arguments<'q> for YdbArguments {
 #[allow(unused)]
 #[derive(Default)]
 pub struct YdbArgumentBuffer {
-    buffer: Vec<u8>,
+    // buffer: Vec<u8>,
 
     // Number of arguments
     count: usize,
@@ -61,6 +61,8 @@ pub struct YdbArgumentBuffer {
     type_holes: Vec<(usize, String)>, // Vec<{ offset, type_name }>
 }
 
+/*
+
 impl Deref for YdbArgumentBuffer {
     type Target = Vec<u8>;
 
@@ -75,4 +77,4 @@ impl DerefMut for YdbArgumentBuffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.buffer
     }
-}
+} */
