@@ -1,4 +1,4 @@
-# ydb-sqlx - Sqlx intergration for ydb-rs-sdk
+# Sqlx intergration for ydb-rs-sdk
 
 This crate provides Sqlx integration for ydb-rs-sdk. It is in under active development.
 
