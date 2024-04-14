@@ -62,7 +62,7 @@ SELECT * FROM test2 WHERE age > $age;
 
 ```
 
-The library is do it for you. You specify only query and bind params to id with `bind` function.
+The library is do it for you. You specify only query and bind params to it with `bind` function.
 
 ## Checklist
 
