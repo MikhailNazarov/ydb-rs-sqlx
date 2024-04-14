@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 There are two binding available:
 
 - default unnamed - with generated name like `$arg_1`
-- named by `with_name` function. you can specify name starting with or without $, but in query you should yous $-started name.
+- named by `with_name` function. you can specify name starting with or without $, but in query you should use $-started name.
 
 Ydb requires that every query params should be declared with `DECLARE` clause like this:
 
