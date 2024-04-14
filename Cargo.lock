@@ -499,7 +499,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "ydb-rs-sqlx",
+ "ydb-sqlx",
 ]
 
 [[package]]
@@ -3176,7 +3176,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ydb-rs-sqlx"
+name = "ydb-sqlx"
 version = "0.1.0"
 dependencies = [
  "async-trait",

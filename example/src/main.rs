@@ -1,10 +1,9 @@
-use std::{env, str::FromStr};
-
+use std::{env, error::Error, str::FromStr};
 use tracing::Level;
-use ydb_rs_sqlx::YdbPoolOptions;
 
+use ydb_sqlx::{with_name, YdbPoolOptions};
 #[tokio::main]
-async fn main() -> Result<(), sqlx::error::Error> {
+async fn main2() -> Result<(), sqlx::error::Error> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
 
@@ -13,7 +12,7 @@ async fn main() -> Result<(), sqlx::error::Error> {
     assert_eq!(row.0, 2);
 
     let users: Vec<UserInfo> = sqlx::query_as("SELECT * FROM test2 WHERE age > $age")
-        .bind(with_name("age", 30))
+        .bind(with_name("age", 30i32))
         .fetch_all(&pool)
         .await?;
 
@@ -27,6 +26,23 @@ struct UserInfo {
     id: u64,
     name: String,
     age: u32,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let connection_string = env::var("YDB_CONNECTION_STRING")?;
+    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
+
+    let users: Vec<UserInfo> =
+        sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
+            .bind(with_name("age", 30))
+            .bind(40)
+            .fetch_all(&pool)
+            .await?;
+
+    assert!(users.len() > 0);
+
+    Ok(())
 }
 
 fn init_logs() {

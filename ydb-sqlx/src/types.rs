@@ -9,7 +9,7 @@ use sqlx_core::{
 use ydb::{Bytes, YdbError};
 
 use crate::{
-    arguments::{Argument, YdbArgumentBuffer},
+    arguments::{NamedArgument, YdbArgumentBuffer},
     database::Ydb,
     typeinfo::{DataType, YdbTypeInfo},
     value::YdbValueRef,
@@ -104,3 +104,18 @@ ydb_type!(
     DataType::Json,
     DataType::JsonDocument
 );
+
+impl<'q, T> Encode<'q, Ydb> for NamedArgument<T>
+where
+    T: Type<Ydb> + Clone + Into<ydb::Value>,
+{
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> sqlx_core::encode::IsNull {
+        let value = self.value().clone().into();
+        let is_null = match &value {
+            ydb::Value::Null => IsNull::Yes,
+            _ => IsNull::No,
+        };
+        buf.push_named(self.name().to_owned(), value, T::type_info());
+        is_null
+    }
+}

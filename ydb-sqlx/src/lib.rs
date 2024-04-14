@@ -38,3 +38,4 @@ impl_acquire!(Ydb, YdbConnection);
 impl_column_index_for_row!(YdbRow);
 impl_column_index_for_statement!(YdbStatement);
 impl_encode_for_option!(Ydb);
+pub use arguments::with_name;

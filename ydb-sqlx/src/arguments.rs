@@ -5,6 +5,7 @@ use sqlx_core::{
     arguments::Arguments,
     encode::{Encode, IsNull},
     type_info::TypeInfo,
+    types::Type,
 };
 
 use crate::typeinfo::YdbTypeInfo;
@@ -92,43 +93,52 @@ impl Argument {
 impl YdbArgumentBuffer {
     pub(crate) fn push(&mut self, value: ydb::Value, type_info: YdbTypeInfo) {
         self.index = self.index + 1;
-        self.arguments
-            .push(Argument::new(self.index, value, type_info));
+        self.arguments.push(Argument::new(
+            format!("$arg_{}", self.index),
+            value,
+            type_info,
+        ));
     }
 
     pub(crate) fn push_named(&mut self, name: String, value: ydb::Value, type_info: YdbTypeInfo) {
-        self.index = self.index + 1;
-        self.arguments
-            .push(Argument::new(self.index, value, type_info));
+        self.arguments.push(Argument::new(name, value, type_info));
     }
 }
 
-pub struct NamedArgument<T> {
+pub struct NamedArgument<T>
+where
+    T: Type<Ydb>,
+{
     name: String,
     value: T,
 }
 
-pub fn with_name<T>(name: impl Into<String>, value: T) -> NamedArgument<T> {
-    NamedArgument {
-        name: name.into(),
-        value,
+impl<T> Type<Ydb> for NamedArgument<T>
+where
+    T: Type<Ydb>,
+{
+    fn type_info() -> YdbTypeInfo {
+        T::type_info()
     }
 }
 
-impl<'q, T> Encode<'q, Ydb> for NamedArgument<T>
-where
-    T: Clone,
-    ydb::Value: From<T>,
-{
-    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> sqlx_core::encode::IsNull {
-        let value = ydb::Value::from(self.value.clone());
-        let is_null = match &value {
-            ydb::Value::Null => IsNull::Yes,
-            _ => IsNull::No,
-        };
-        buf.push_named(self.name.clone(), value, YdbTypeInfo(self.value));
-        is_null
+impl<T: Type<Ydb>> NamedArgument<T> {
+    pub fn value(&self) -> &T {
+        &self.value
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+pub fn with_name<T: Type<Ydb>>(name: &str, value: T) -> NamedArgument<T> {
+    let name = if name.starts_with('$') {
+        name.into()
+    } else {
+        format!("${}", name)
+    };
+    NamedArgument::<T> { name, value }
 }
 
 /*
