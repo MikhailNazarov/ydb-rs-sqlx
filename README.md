@@ -1,4 +1,4 @@
-# ydb-sqlx - Sqlx intergration for ydb-rs-sdk
+# Sqlx intergration for ydb-rs-sdk
 
 This crate provides Sqlx integration for ydb-rs-sdk. It is in under active development.
 
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 There are two binding available:
 
 - default unnamed - with generated name like `$arg_1`
-- named by `with_name` function. you can specify name starting with or without $, but in query you should yous $-started name.
+- named by `with_name` function. you can specify name starting with or without $, but in query you should use $-started name.
 
 Ydb requires that every query params should be declared with `DECLARE` clause like this:
 
@@ -62,7 +62,7 @@ SELECT * FROM test2 WHERE age > $age;
 
 ```
 
-The library is do it for you. You specify only query and bind params to id with `bind` function.
+The library is do it for you. You specify only query and bind params to it with `bind` function.
 
 ## Checklist
 
