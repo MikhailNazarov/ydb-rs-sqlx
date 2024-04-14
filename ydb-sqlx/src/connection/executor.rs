@@ -9,9 +9,7 @@ use sqlx_core::executor::Execute;
 use sqlx_core::executor::Executor;
 
 use sqlx_core::Error;
-use tracing::info;
 use ydb::Query;
-use ydb::Value;
 use ydb::YdbOrCustomerError;
 
 use crate::error::err_ydb_or_customer_to_sqlx;

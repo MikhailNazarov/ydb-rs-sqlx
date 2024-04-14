@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 
 use rustring_builder::StringBuilder;
-use sqlx_core::{
-    arguments::Arguments,
-    encode::{Encode, IsNull},
-    type_info::TypeInfo,
-    types::Type,
-};
+use sqlx_core::{arguments::Arguments, type_info::TypeInfo, types::Type};
 
 use crate::typeinfo::YdbTypeInfo;
 
@@ -49,12 +44,6 @@ impl YdbArguments {
 pub struct YdbArgumentBuffer {
     arguments: Vec<Argument>,
     index: i32,
-}
-
-impl YdbArgumentBuffer {
-    pub(crate) fn new() -> Self {
-        Self::default()
-    }
 }
 
 #[derive(Clone, Debug)]

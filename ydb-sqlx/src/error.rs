@@ -1,4 +1,4 @@
-use sqlx_core::{error::DatabaseError, rt::TimeoutError};
+use sqlx_core::rt::TimeoutError;
 use thiserror::Error;
 use ydb::{YdbError, YdbOrCustomerError};
 
@@ -29,7 +29,7 @@ impl From<WrappedError> for sqlx_core::error::Error {
 pub(crate) fn err_ydb_or_customer_to_sqlx(e: YdbOrCustomerError) -> sqlx_core::error::Error {
     match e {
         YdbOrCustomerError::YDB(e) => err_ydb_to_sqlx(e),
-        YdbOrCustomerError::Customer(e) => todo!(),
+        YdbOrCustomerError::Customer(_e) => todo!(),
     }
 }
 

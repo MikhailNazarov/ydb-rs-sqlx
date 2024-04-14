@@ -4,7 +4,6 @@ use database::Ydb;
 use row::YdbRow;
 use sqlx_core::executor::Executor;
 
-use sqlx_core::pool::Pool;
 use sqlx_core::{
     impl_acquire, impl_column_index_for_row, impl_column_index_for_statement,
     impl_encode_for_option, impl_into_arguments_for_arguments,
