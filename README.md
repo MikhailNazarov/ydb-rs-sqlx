@@ -73,5 +73,5 @@ The library is do it for you. You specify only query and bind params to id with 
 - [x] Binding parameters
 - Support binding for types
     - Primitive types
-      - [ ] bool, i8, u8, i16, u16, i32, u32, i64, u64, f32, f64
-      - [ ] int16 
+      - [x] bool, i8, u8, i16, u16, i32, u32, i64, u64, f32, f64
+      - [x] String 
