@@ -1,37 +1,15 @@
-use std::{env, error::Error, str::FromStr};
+use std::{env, str::FromStr};
 use tracing::Level;
 
 use ydb_sqlx::{with_name, YdbPoolOptions};
 #[tokio::main]
-async fn main2() -> Result<(), sqlx::error::Error> {
+async fn main() -> Result<(), sqlx::error::Error> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
 
     let pool = YdbPoolOptions::new().connect(&connection_string).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
-
-    let users: Vec<UserInfo> = sqlx::query_as("SELECT * FROM test2 WHERE age > $age")
-        .bind(with_name("age", 30i32))
-        .fetch_all(&pool)
-        .await?;
-
-    assert!(users.len() > 0);
-
-    Ok(())
-}
-
-#[derive(sqlx::FromRow)]
-struct UserInfo {
-    id: u64,
-    name: String,
-    age: u32,
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let connection_string = env::var("YDB_CONNECTION_STRING")?;
-    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
 
     let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
@@ -43,6 +21,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     assert!(users.len() > 0);
 
     Ok(())
+}
+
+#[allow(unused)]
+#[derive(sqlx::FromRow)]
+struct UserInfo {
+    id: u64,
+    name: String,
+    age: u32,
 }
 
 fn init_logs() {

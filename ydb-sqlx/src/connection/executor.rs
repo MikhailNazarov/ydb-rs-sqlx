@@ -11,6 +11,7 @@ use sqlx_core::executor::Executor;
 use sqlx_core::Error;
 use tracing::info;
 use ydb::Query;
+use ydb::Value;
 use ydb::YdbOrCustomerError;
 
 use crate::error::err_ydb_or_customer_to_sqlx;
@@ -21,38 +22,45 @@ use crate::{database::Ydb, query::YdbQueryResult, row::YdbRow};
 
 use super::YdbConnection;
 
+fn build_query<'q, E: 'q>(mut query: E) -> Query
+where
+    E: Execute<'q, Ydb>,
+{
+    let mut sb = StringBuilder::new();
+    let mut params = HashMap::new();
+
+    if let Some(arguments) = query.take_arguments() {
+        for arg in arguments.into_iter() {
+            arg.declare(&mut sb);
+            arg.add_to_params(&mut params);
+        }
+        sb.append_line("");
+    }
+
+    sb.append(query.sql());
+
+    let sql = sb.to_string();
+
+    let mut query = Query::new(sql);
+    if !params.is_empty() {
+        query = query.with_params(params);
+    }
+    query
+}
+
 impl<'c> Executor<'c> for &'c mut YdbConnection {
     type Database = Ydb;
 
     fn fetch_many<'e, 'q: 'e, E: 'q>(
         self,
-        mut query: E,
+        query: E,
     ) -> BoxStream<'e, Result<sqlx_core::Either<YdbQueryResult, YdbRow>, Error>>
     where
         'c: 'e,
         E: Execute<'q, Ydb>,
     {
         let result = Box::pin(async move {
-            let mut sb = StringBuilder::new();
-            let mut params = HashMap::new();
-
-            if let Some(arguments) = query.take_arguments() {
-                for arg in arguments.into_iter() {
-                    arg.declare(&mut sb);
-                    arg.add_to_params(&mut params);
-                }
-                sb.append_line("");
-            }
-
-            sb.append(query.sql());
-
-            let sql = sb.to_string();
-
-            let mut query = Query::new(sql);
-            if !params.is_empty() {
-                query = query.with_params(params);
-            }
-
+            let query = build_query(query);
             self.client
                 .table_client()
                 .retry_transaction(|t| async {
@@ -102,7 +110,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         E: Execute<'q, Ydb>,
     {
         Box::pin(async move {
-            let query = Query::new(query.sql().to_string());
+            let query = build_query(query);
             self.client
                 .table_client()
                 .retry_transaction(|t| async {

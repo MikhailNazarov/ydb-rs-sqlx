@@ -71,7 +71,48 @@ The library is do it for you. You specify only query and bind params to id with 
 - [ ] Custom credentials with options
 - [x] Basic query
 - [x] Binding parameters
-- Support binding for types
-    - Primitive types
-      - [x] bool, i8, u8, i16, u16, i32, u32, i64, u64, f32, f64
-      - [x] String 
+- Support types
+    - Numeric
+        - [x] Bool	
+        - [x] Int8 	
+        - [x] Int16 	
+        - [x] Int32 	
+        - [x] Int64 	
+        - [x] Uint8 	
+        - [x] Uint16 	
+        - [x] Uint32 	
+        - [x] Uint64
+        - [x] Float 
+        - [x] Double 	
+        - [ ] Decimal 
+        - [ ] DyNumber 
+    - String types
+        - [x] String
+        - [x] Utf8
+        - [x] Json
+        - [x] JsonDocument
+        - [x] Yson
+        - [ ] Uuid
+    - Date and time
+        - [x] Date
+        - [x] Datetime
+        - [x] Timestamp
+        - [ ] TzDate
+        - [ ] TzDateTime
+        - [ ] TzTimestamp
+    - [ ] Optional
+    - Containers
+        - [ ] List
+        - [ ] Dictionary
+        - [ ] Set
+        - [ ] Tuple
+        - [ ] Structure
+        - [ ] Stream
+        - [ ] Variant on tuple
+        - [ ] Variant on structure
+        - [ ] Enumeration
+- [ ] Prepared statements
+- [ ] Transactions
+- [ ] Compile-type checked queries
+- [ ] Migrations
+- [ ] Log Statements
