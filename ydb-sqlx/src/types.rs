@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref, time::Duration};
 
 use sqlx_core::{
     decode::Decode,
@@ -80,6 +80,8 @@ ydb_type!(
     DataType::Uint8
 );
 
+ydb_type!(Interval, DataType::Interval);
+
 ydb_type!(f32, DataType::Float);
 ydb_type!(f64, DataType::Double, DataType::Float);
 ydb_type!(
@@ -117,5 +119,43 @@ where
         };
         buf.push_named(self.name().to_owned(), value, T::type_info());
         is_null
+    }
+}
+
+pub enum Sign {
+    Positive,
+    Negative,
+}
+pub struct Interval {
+    duration: Duration,
+    sign: Sign,
+}
+
+impl From<&Interval> for ydb::Value {
+    fn from(value: &Interval) -> Self {
+        ydb::Value::Interval(ydb::SignedInterval {
+            duration: value.duration,
+            sign: match value.sign {
+                Sign::Positive => ydb::Sign::Plus,
+                Sign::Negative => ydb::Sign::Minus,
+            },
+        })
+    }
+}
+impl TryFrom<ydb::Value> for Interval {
+    type Error = YdbError;
+
+    fn try_from(value: ydb::Value) -> Result<Self, Self::Error> {
+        match value {
+            ydb::Value::Interval(interval) => Ok(Interval {
+                duration: interval.duration,
+                sign: match interval.sign {
+                    ydb::Sign::Plus => Sign::Positive,
+                    ydb::Sign::Minus => Sign::Negative,
+                },
+            }),
+
+            _ => Err(ydb::YdbError::Custom("Value is not an interval".to_owned())),
+        }
     }
 }

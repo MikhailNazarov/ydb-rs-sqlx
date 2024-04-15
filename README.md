@@ -100,17 +100,7 @@ The library is do it for you. You specify only query and bind params to it with 
         - [ ] TzDate
         - [ ] TzDateTime
         - [ ] TzTimestamp
-    - [ ] Optional
-    - Containers
-        - [ ] List
-        - [ ] Dictionary
-        - [ ] Set
-        - [ ] Tuple
-        - [ ] Structure
-        - [ ] Stream
-        - [ ] Variant on tuple
-        - [ ] Variant on structure
-        - [ ] Enumeration
+    - [x] Optional
 - [ ] Prepared statements
 - [ ] Transactions
 - [ ] Compile-type checked queries
