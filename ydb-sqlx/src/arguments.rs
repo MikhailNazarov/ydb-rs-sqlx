@@ -68,6 +68,9 @@ impl Argument {
             self.name,
             self.type_info.name()
         ));
+        // if self.type_info.is_optional() {
+        //     sb.append("?");
+        // }
     }
 
     pub(crate) fn add_to_params(&self, params: &mut HashMap<String, ydb::Value>) {

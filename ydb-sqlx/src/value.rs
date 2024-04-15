@@ -77,6 +77,11 @@ impl Value for YdbValue {
     }
 
     fn is_null(&self) -> bool {
+        if let ydb::Value::Optional(t) = &self.value {
+            if t.is_none() {
+                return true;
+            }
+        }
         self.value == ydb::Value::Null
     }
 }

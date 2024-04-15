@@ -1,6 +1,6 @@
 use sqlx_core::column::Column;
 
-use crate::typeinfo::YdbTypeInfo;
+use crate::typeinfo::{DataType, YdbTypeInfo};
 
 use super::database::Ydb;
 
@@ -15,7 +15,10 @@ impl YdbColumn {
         Self {
             name: column.name,
             ordinal: column.ordinal,
-            type_info: YdbTypeInfo::new(column.value_type),
+            type_info: column
+                .value_type
+                .map(|t| YdbTypeInfo::new(t))
+                .unwrap_or(YdbTypeInfo(DataType::Unknown)),
         }
     }
 }

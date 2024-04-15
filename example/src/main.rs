@@ -29,6 +29,7 @@ struct UserInfo {
     id: u64,
     name: String,
     age: u32,
+    description: Option<String>,
 }
 
 fn init_logs() {
