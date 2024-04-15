@@ -97,6 +97,7 @@ The library is do it for you. You specify only query and bind params to it with 
         - [x] Date
         - [x] Datetime
         - [x] Timestamp
+        - [x] Interval
         - [ ] TzDate
         - [ ] TzDateTime
         - [ ] TzTimestamp
