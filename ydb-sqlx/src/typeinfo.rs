@@ -6,7 +6,7 @@ use sqlx_core::type_info::TypeInfo;
 pub struct YdbTypeInfo(pub(crate) DataType);
 
 impl YdbTypeInfo {
-    pub(crate) fn new(value: ydb::Value) -> Self {
+    pub(crate) fn new(value: &ydb::Value) -> Self {
         let data_type = value.into();
 
         YdbTypeInfo(data_type)
@@ -94,8 +94,8 @@ pub(crate) enum DataType {
     Struct,
 }
 
-impl From<ydb::Value> for DataType {
-    fn from(value: ydb::Value) -> Self {
+impl From<&ydb::Value> for DataType {
+    fn from(value: &ydb::Value) -> Self {
         match value {
             ydb::Value::Void => DataType::Void,
             ydb::Value::Null => DataType::Null,

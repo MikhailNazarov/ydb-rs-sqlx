@@ -7,8 +7,10 @@ use std::{str::FromStr, sync::Arc, time::Duration};
 use super::database::Ydb;
 use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
-use ydb::{AnonymousCredentials, FromEnvCredentials};
-use ydb::{Credentials, YdbError};
+
+
+use ydb::{AccessTokenCredentials, AnonymousCredentials, MetadataUrlCredentials, ServiceAccountCredentials, StaticCredentials};
+use ydb::Credentials;
 
 #[allow(unused)]
 pub struct YdbConnection {
@@ -30,11 +32,17 @@ impl Connection for YdbConnection {
     }
 
     fn close_hard(self) -> futures_util::future::BoxFuture<'static, Result<(), sqlx_core::Error>> {
-        todo!()
+        Box::pin(future::ready(Ok(())))
     }
 
     fn ping(&mut self) -> futures_util::future::BoxFuture<'_, Result<(), sqlx_core::Error>> {
+        
         //todo: validate connection
+        // Box::pin(async{
+        //     self.client.table_client().keepalive().await
+        //     .map_err(|_|sqlx_core::error::Error::PoolClosed)
+            
+        // })
         Box::pin(future::ready(Ok(())))
     }
 
@@ -62,12 +70,15 @@ impl Connection for YdbConnection {
 }
 
 #[allow(unused)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct YdbConnectOptions {
     connection_string: String,
     connection_timeout: Duration,
-    credentials: Arc<Box<dyn Credentials>>,
+    credentials: Option<Arc<Box<dyn Credentials>>>,
+    
 }
+
+
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
@@ -83,7 +94,7 @@ impl ConnectOptions for YdbConnectOptions {
         Self::Connection: Sized,
     {
         Box::pin(async move {
-            let connection = YdbConnection::establish(self).await?;
+            let connection = YdbConnection::establish(&self).await?;
             Ok(connection)
         })
     }
@@ -101,25 +112,70 @@ impl ConnectOptions for YdbConnectOptions {
     }
 }
 
-impl YdbConnectOptions {
-    #[allow(unused)]
-    fn with_credentials_from_env(mut self) -> Result<Self, YdbError> {
-        let cred = FromEnvCredentials::new()?;
-        self.credentials = Arc::new(Box::new(cred));
-        Ok(self)
-    }
-}
 
 impl FromStr for YdbConnectOptions {
     type Err = sqlx_core::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(YdbConnectOptions {
-            connection_string: s.to_owned(),
-            connection_timeout: Duration::from_secs(10),
-            credentials: Arc::new(Box::new(AnonymousCredentials::new())),
-        })
+        let mut options = Self::default();
+        options.connection_timeout = Duration::from_secs(2);
+        
+        let url = sqlx_core::url::Url::parse(s)
+            .map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+        let mut user = None;
+        let mut password = None;
+        let mut database = None; 
+
+        for (k,v) in url.query_pairs(){
+            match k.as_ref(){
+               
+                "connection_timeout" => {
+                    let timeout = v.parse::<u64>().map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+                    options.connection_timeout = Duration::from_secs(timeout);
+                },
+                "sa-key" => {
+                    let sa = ServiceAccountCredentials::from_file(v.as_ref())
+                        .map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+                    options.credentials = Some(Arc::new(Box::new(sa)));
+                },
+                "anonymous" =>{
+                    let cred = AnonymousCredentials::new();
+                    options.credentials = Some(Arc::new(Box::new(cred)));
+                },
+                "metadata" =>{
+                    let cred = MetadataUrlCredentials::new();
+                    options.credentials = Some(Arc::new(Box::new(cred)));
+                }
+                "token" =>{
+                    let cred = AccessTokenCredentials::from(v.as_ref());
+                    options.credentials = Some(Arc::new(Box::new(cred)));
+                },
+                "database" =>{
+                    database = Some(v.to_owned());
+                },
+                "user" =>{
+                    user = Some(v.to_owned());
+                },
+                "password"=>{
+                    password = Some(v.to_owned());
+                },
+                _ => continue
+            }
+        }
+        let database = database.unwrap_or("/".into()).to_string();
+        
+        let endpoint = format!("{}://{}:{}?database={}",url.scheme(),url.host().unwrap(),url.port().unwrap(),database);
+        if let (Some(user), Some(password)) = (user, password) {
+            let password = password.to_string();
+            let uri = http::Uri::from_str(&endpoint).unwrap();
+            let user = user.to_string();
+            let cred = StaticCredentials::new(user, password, uri, database);
+            options.credentials = Some(Arc::new(Box::new(cred)));
+        }
+        options.connection_string = endpoint;
+        Ok(options)
     }
+
 }
 
 impl AsMut<YdbConnection> for YdbConnection {

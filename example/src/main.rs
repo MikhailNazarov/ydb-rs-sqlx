@@ -1,13 +1,15 @@
 use std::{env, str::FromStr};
-use tracing::Level;
+
+use tracing::{info, Level};
 
 use ydb_sqlx::{with_name, YdbPoolOptions};
 #[tokio::main]
-async fn main() -> Result<(), sqlx::error::Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
-
-    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
+    
+    let pool = YdbPoolOptions::new()
+        .connect(&connection_string).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
@@ -19,6 +21,7 @@ async fn main() -> Result<(), sqlx::error::Error> {
             .await?;
 
     assert!(users.len() > 0);
+    info!("users found: {}", users.len());
 
     Ok(())
 }

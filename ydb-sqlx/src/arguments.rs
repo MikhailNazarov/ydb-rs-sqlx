@@ -73,8 +73,8 @@ impl Argument {
         // }
     }
 
-    pub(crate) fn add_to_params(&self, params: &mut HashMap<String, ydb::Value>) {
-        params.insert(self.name(), self.value.clone());
+    pub(crate) fn add_to_params(self, params: &mut HashMap<String, ydb::Value>) {
+        params.insert(self.name(), self.value);
     }
 
     pub(crate) fn name(&self) -> String {

@@ -16,7 +16,7 @@ impl YdbColumn {
             name: column.name,
             ordinal: column.ordinal,
             type_info: column
-                .value_type
+                .value_type.as_ref()
                 .map(|t| YdbTypeInfo::new(t))
                 .unwrap_or(YdbTypeInfo(DataType::Unknown)),
         }
