@@ -68,7 +68,7 @@ The library is do it for you. You specify only query and bind params to it with 
 
 - [x] Connect to ydb
 - [x] Default credentials (using fromEnv)
-- [ ] Custom credentials with options
+- [x] Custom credentials with options
 - [x] Basic query
 - [x] Binding parameters
 - Support types
@@ -85,7 +85,6 @@ The library is do it for you. You specify only query and bind params to it with 
         - [x] Float 
         - [x] Double 	
         - [ ] Decimal 
-        - [ ] DyNumber 
     - String types
         - [x] String
         - [x] Utf8
@@ -98,9 +97,6 @@ The library is do it for you. You specify only query and bind params to it with 
         - [x] Datetime
         - [x] Timestamp
         - [x] Interval
-        - [ ] TzDate
-        - [ ] TzDateTime
-        - [ ] TzTimestamp
     - [x] Optional
 - [ ] Prepared statements
 - [ ] Transactions
