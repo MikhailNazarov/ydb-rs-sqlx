@@ -14,6 +14,7 @@ use ydb::YdbOrCustomerError;
 
 use crate::error::err_ydb_or_customer_to_sqlx;
 
+use crate::error::err_ydb_to_sqlx;
 use crate::statement::YdbStatement;
 use crate::typeinfo::YdbTypeInfo;
 use crate::{database::Ydb, query::YdbQueryResult, row::YdbRow};
@@ -59,6 +60,10 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     {
         let result = Box::pin(async move {
             let query = build_query(query);
+            if let Some(tr) = &mut self.transaction {
+                let result = tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?;
+                Ok(Some(result.into_results()))
+            } else {
             self.client
                 .table_client()
                 .retry_transaction(|t| async {
@@ -69,6 +74,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                 })
                 .await
                 .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+            }
         });
         let stream = futures::stream::once(result)
             .map(|r| {
@@ -109,6 +115,17 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     {
         Box::pin(async move {
             let query = build_query(query);
+            if let Some(tr) = &mut self.transaction {
+                let result = tr.query(query.clone()).await
+                .map_err(|e| err_ydb_to_sqlx(e))?;
+
+                    if let Some(row) = result.into_only_row().ok() {
+                        let row = YdbRow::from(row)?;
+                        Ok(Some(row))
+                    } else {
+                        Ok(None)
+                    }
+            }else{
             self.client
                 .table_client()
                 .retry_transaction(|t| async {
@@ -125,6 +142,8 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                 })
                 .await
                 .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+            }
+            
         })
     }
 
