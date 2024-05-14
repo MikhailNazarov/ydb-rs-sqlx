@@ -2,6 +2,7 @@ mod connection_impl;
 mod executor;
 
 use std::fmt;
+use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
 use super::database::Ydb;
@@ -9,16 +10,25 @@ use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
 
 
+use sqlx_core::transaction::Transaction;
 use ydb::{AccessTokenCredentials, AnonymousCredentials, MetadataUrlCredentials, ServiceAccountCredentials, StaticCredentials};
 use ydb::Credentials;
 
 #[allow(unused)]
-pub struct YdbConnection {
+pub struct YdbConnection{
     client: ydb::Client,
+    pub(crate) transaction: Option<Box<dyn ydb::Transaction>>
 }
 impl fmt::Debug for YdbConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("YdbConnection")
+    }
+}
+
+impl Deref for YdbConnection {
+    type Target = ydb::Client;
+    fn deref(&self) -> &Self::Target {
+        &self.client
     }
 }
 
@@ -55,7 +65,7 @@ impl Connection for YdbConnection {
     where
         Self: Sized,
     {
-        todo!()
+        Transaction::begin(self)
     }
 
     fn shrink_buffers(&mut self) {}
