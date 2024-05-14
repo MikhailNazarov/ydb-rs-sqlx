@@ -48,10 +48,10 @@ impl TransactionManager for YdbTransactionManager {
     }
 
     fn start_rollback(conn: &mut YdbConnection) {
-        Box::pin(async move{
+        let _ = Box::pin(async move{
             if let Some(tr) = &mut conn.transaction{
-                tr.rollback().await.map_err(|e| err_ydb_to_sqlx(e)).map_err(|e|{
-                    error!("{}",e)
+                let _ = tr.rollback().await.map_err(|e| err_ydb_to_sqlx(e)).map_err(|e|{
+                    error!("{}",e);
                 });
                 conn.transaction = None;
             }
