@@ -14,7 +14,7 @@ impl Migrate for YdbConnection {
     fn ensure_migrations_table(&mut self) -> BoxFuture<'_, Result<(), MigrateError>> {
         Box::pin(async move {
             
-            self.execute(r#"
+            query(r#"
                 CREATE TABLE _sqlx_migrations (
                     version Int64,
                     description Utf8 NOT NULL,
@@ -24,7 +24,7 @@ impl Migrate for YdbConnection {
                     execution_time Int64 NOT NULL,
                     PRIMARY KEY (version)
                 );
-            "#).await?;
+            "#).execute(self.schema()).await?;
 
             Ok(())
         })
@@ -85,7 +85,7 @@ impl Migrate for YdbConnection {
             // The `execution_time` however can only be measured for the whole transaction. This value _only_ exists for
             // data lineage and debugging reasons, so it is not super important if it is lost. So we initialize it to -1
             // and update it once the actual transaction completed.
-            let _ = tx.execute(&*migration.sql).await?;
+            let _ = tx.schema().execute(&*migration.sql).await?;
 
             let _ = query::<Ydb>(
                 r#"
@@ -156,15 +156,15 @@ impl Migrate for YdbConnection {
 
 
 impl MigrateDatabase for Ydb{
-    fn create_database(url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
+    fn create_database(_url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
         todo!()
     }
 
-    fn database_exists(url: &str) -> BoxFuture<'_, Result<bool, sqlx_core::Error>> {
+    fn database_exists(_url: &str) -> BoxFuture<'_, Result<bool, sqlx_core::Error>> {
         todo!()
     }
 
-    fn drop_database(url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
+    fn drop_database(_url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
         todo!()
     }
 }

@@ -18,6 +18,7 @@ use crate::error::err_ydb_to_sqlx;
 use crate::statement::YdbStatement;
 use crate::typeinfo::YdbTypeInfo;
 use crate::{database::Ydb, query::YdbQueryResult, row::YdbRow};
+use sqlx_core::describe::Describe;
 
 use super::YdbConnection;
 
@@ -47,6 +48,14 @@ where
     query
 }
 
+// impl YdbConnection{
+//     pub(crate) async fn execute_scheme<Q: Into<String>>(&mut self, query: Q) -> Result<(), Error> {
+        
+//         self.client.table_client().retry_execute_scheme_query(query).await.map_err(|e| err_ydb_to_sqlx(e))?;
+
+//         Ok(())
+//     }
+// }
 
 impl<'c> Executor<'c> for &'c mut YdbConnection {
     type Database = Ydb;
@@ -165,7 +174,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     fn describe<'e, 'q: 'e>(
         self,
         _sql: &'q str,
-    ) -> futures::future::BoxFuture<'e, Result<sqlx_core::describe::Describe<Ydb>, Error>>
+    ) -> futures::future::BoxFuture<'e, Result<Describe<Ydb>, Error>>
     where
         'c: 'e,
     {

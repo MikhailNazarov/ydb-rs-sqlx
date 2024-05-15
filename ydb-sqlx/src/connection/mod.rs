@@ -1,12 +1,14 @@
 mod connection_impl;
 mod executor;
+pub mod schema_executor;
 
 use std::fmt;
 use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
+use self::schema_executor::YdbSchemaExecutor;
+
 use super::database::Ydb;
-use futures::future::BoxFuture;
 use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
 
@@ -33,6 +35,11 @@ impl Deref for YdbConnection {
     }
 }
 
+impl YdbConnection{
+    pub fn schema(&self)->YdbSchemaExecutor{
+        YdbSchemaExecutor::new(self.client.table_client())
+    }
+}
 
 
 impl Connection for YdbConnection {
