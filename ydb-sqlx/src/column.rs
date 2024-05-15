@@ -6,9 +6,9 @@ use super::database::Ydb;
 
 #[derive(Debug)]
 pub struct YdbColumn {
-    name: String,
-    ordinal: usize,
-    type_info: YdbTypeInfo,
+    pub(crate) name: String,
+    pub(crate) ordinal: usize,
+    pub(crate) type_info: YdbTypeInfo,
 }
 impl YdbColumn {
     pub(crate) fn new(column: ydb::Column) -> Self {
@@ -16,7 +16,8 @@ impl YdbColumn {
             name: column.name,
             ordinal: column.ordinal,
             type_info: column
-                .value_type.as_ref()
+                .value_type
+                .as_ref()
                 .map(|t| YdbTypeInfo::new(t))
                 .unwrap_or(YdbTypeInfo(DataType::Unknown)),
         }

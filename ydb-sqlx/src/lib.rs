@@ -23,6 +23,7 @@ pub mod transaction;
 pub mod typeinfo;
 pub mod types;
 pub mod value;
+pub mod any;
 /// An alias for [`Pool`][crate::pool::Pool], specialized for Ydb.
 pub type YdbPool = sqlx_core::pool::Pool<Ydb>;
 
