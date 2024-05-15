@@ -100,7 +100,7 @@ ydb_type!(
 
 ydb_type!(
     Bytes,
-    DataType::String,
+    DataType::Bytes,
     DataType::Yson,
     DataType::Text,
     DataType::Json,

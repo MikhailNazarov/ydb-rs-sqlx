@@ -1,4 +1,7 @@
-use sqlx_core::database::{Database, HasArguments, HasStatement, HasStatementCache, HasValueRef};
+use sqlx_core::{
+    database::{Database, HasArguments, HasStatement, HasStatementCache, HasValueRef},
+    migrate::MigrateDatabase,
+};
 
 use crate::value::YdbValueRef;
 
@@ -34,7 +37,7 @@ impl Database for Ydb {
 
     const NAME: &'static str = "Ydb";
 
-    const URL_SCHEMES: &'static [&'static str] = &["grpcs"];
+    const URL_SCHEMES: &'static [&'static str] = &["grpc", "grpcs", "ydb", "ydbs"];
 }
 impl<'r> HasValueRef<'r> for Ydb {
     type Database = Ydb;

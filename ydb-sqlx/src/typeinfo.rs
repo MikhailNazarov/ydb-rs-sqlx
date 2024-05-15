@@ -39,7 +39,7 @@ impl TypeInfo for YdbTypeInfo {
             DataType::DateTime => "DateTime",
             DataType::Timestamp => "Timestamp",
             DataType::Interval => "Interval",
-            DataType::String => "String",
+            DataType::Bytes => "Bytes",
             DataType::Text => "Text",
             DataType::Yson => "Yson",
             DataType::Json => "Json",
@@ -79,9 +79,7 @@ pub(crate) enum DataType {
     Timestamp,
     Interval,
 
-    /// Store native bytes array, similary to binary/blob in other databases. It named string by history reason only.
-    /// Use Utf8 type for store text.
-    String,
+    Bytes,
 
     /// Text data, encoded to valid utf8
     Text,
@@ -114,7 +112,7 @@ impl From<&ydb::Value> for DataType {
             ydb::Value::DateTime(_) => DataType::DateTime,
             ydb::Value::Timestamp(_) => DataType::Timestamp,
             ydb::Value::Interval(_) => DataType::Interval,
-            ydb::Value::Bytes(_) => DataType::String,
+            ydb::Value::Bytes(_) => DataType::Bytes,
             ydb::Value::Text(_) => DataType::Text,
             ydb::Value::Yson(_) => DataType::Yson,
             ydb::Value::Json(_) => DataType::Json,
@@ -141,7 +139,7 @@ mod test {
     pub fn decode_null() {
         let value = YdbValue::new(
             ydb::Value::Optional(Default::default()),
-            YdbTypeInfo(DataType::String),
+            YdbTypeInfo(DataType::Bytes),
         );
         let r = YdbValueRef::new(&value);
         let res = <Option<String> as Decode<Ydb>>::decode(r);

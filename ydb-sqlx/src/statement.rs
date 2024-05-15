@@ -1,7 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
 use itertools::Either;
-use sqlx_core::{column::ColumnIndex, impl_statement_query, statement::Statement, Error, HashMap};
+use sqlx_core::{
+    column::ColumnIndex, ext::ustr::UStr, impl_statement_query, statement::Statement, Error,
+    HashMap,
+};
 
 use crate::{arguments::YdbArguments, column::YdbColumn, typeinfo::YdbTypeInfo};
 
@@ -17,7 +20,7 @@ pub(crate) struct YdbStatementMetadata {
     pub(crate) columns: Vec<YdbColumn>,
     // This `Arc` is not redundant; it's used to avoid deep-copying this map for the `Any` backend.
     // See `sqlx-postgres/src/any.rs`
-    pub(crate) column_names: Arc<HashMap<String, usize>>,
+    pub(crate) column_names: Arc<HashMap<UStr, usize>>,
     pub(crate) parameters: Vec<YdbTypeInfo>,
 }
 

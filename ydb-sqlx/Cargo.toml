@@ -13,9 +13,9 @@ thiserror = "1"
 async-trait = "0.1"
 futures-util = "0.3"
 itertools = "0.12"
-sqlx-core = { version = "0.7" }
+sqlx-core = { version = "0.7", features = ["any"] }
 tracing = "0.1"
-ydb = {git="https://github.com/MikhailNazarov/ydb-rs-sdk.git", branch="sqlx" }
+ydb = { git = "https://github.com/MikhailNazarov/ydb-rs-sdk.git", branch = "sqlx" }
 url = "2.2"
 futures-core = "0.3"
 futures = "0.3"

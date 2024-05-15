@@ -2792,6 +2792,8 @@ dependencies = [
  "clap_complete",
  "console",
  "dotenvy",
+ "once_cell",
+ "sqlx",
  "sqlx-cli",
  "tokio",
  "ydb-sqlx",
