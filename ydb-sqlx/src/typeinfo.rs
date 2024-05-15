@@ -114,7 +114,7 @@ impl From<&ydb::Value> for DataType {
             ydb::Value::DateTime(_) => DataType::DateTime,
             ydb::Value::Timestamp(_) => DataType::Timestamp,
             ydb::Value::Interval(_) => DataType::Interval,
-            ydb::Value::String(_) => DataType::String,
+            ydb::Value::Bytes(_) => DataType::String,
             ydb::Value::Text(_) => DataType::Text,
             ydb::Value::Yson(_) => DataType::Yson,
             ydb::Value::Json(_) => DataType::Json,
