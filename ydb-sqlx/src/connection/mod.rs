@@ -6,6 +6,7 @@ use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
 use super::database::Ydb;
+use futures::future::BoxFuture;
 use futures_util::future;
 use sqlx_core::connection::{ConnectOptions, Connection};
 
@@ -31,6 +32,8 @@ impl Deref for YdbConnection {
         &self.client
     }
 }
+
+
 
 impl Connection for YdbConnection {
     type Database = Ydb;

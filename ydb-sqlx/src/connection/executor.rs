@@ -47,6 +47,7 @@ where
     query
 }
 
+
 impl<'c> Executor<'c> for &'c mut YdbConnection {
     type Database = Ydb;
 
@@ -58,12 +59,15 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         'c: 'e,
         E: Execute<'q, Ydb>,
     {
+    
         let result = Box::pin(async move {
             let query = build_query(query);
             if let Some(tr) = &mut self.transaction {
+                
                 let result = tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?;
                 Ok(Some(result.into_results()))
             } else {
+                
             self.client
                 .table_client()
                 .retry_transaction(|t| async {

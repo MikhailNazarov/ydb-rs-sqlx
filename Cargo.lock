@@ -2316,6 +2316,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sqlx-ydb"
+version = "0.1.0"
+dependencies = [
+ "sqlx",
+ "tokio",
+ "ydb-sqlx",
+]
+
+[[package]]
 name = "stack-buf"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
