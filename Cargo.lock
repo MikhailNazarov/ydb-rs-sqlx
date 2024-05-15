@@ -3141,6 +3141,7 @@ dependencies = [
 [[package]]
 name = "ydb"
 version = "0.8.4"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?branch=sqlx#22484558c4a3668d40ebf5da6781e99240b7e00c"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3179,6 +3180,7 @@ dependencies = [
 [[package]]
 name = "ydb-grpc"
 version = "0.0.14"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?branch=sqlx#22484558c4a3668d40ebf5da6781e99240b7e00c"
 dependencies = [
  "pbjson",
  "pbjson-build",

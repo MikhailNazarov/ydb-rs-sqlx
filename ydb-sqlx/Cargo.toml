@@ -15,7 +15,7 @@ futures-util = "0.3"
 itertools = "0.12"
 sqlx-core = { version = "0.7" }
 tracing = "0.1"
-ydb = { path = "../../ydb-rs-sdk/ydb" }
+ydb = {git="https://github.com/MikhailNazarov/ydb-rs-sdk.git", branch="sqlx" }
 url = "2.2"
 futures-core = "0.3"
 futures = "0.3"
