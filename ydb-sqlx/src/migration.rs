@@ -114,7 +114,7 @@ impl Migrate for YdbConnection {
                 r#"
                 
                     UPDATE _sqlx_migrations
-                    SET execution_time = $arg_1
+                    SET execution_time = $arg_1, checksum = checksum -- fix ydb error
                     WHERE version = $arg_2
                 "#,
             )
