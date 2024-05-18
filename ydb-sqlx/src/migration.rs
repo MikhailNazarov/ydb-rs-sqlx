@@ -16,7 +16,7 @@ impl Migrate for YdbConnection {
             
             query(r#"
                 CREATE TABLE _sqlx_migrations (
-                    version Int64,
+                    version Int64 NOT NULL,
                     description Utf8 NOT NULL,
                     checksum String NOT NULL,
                     installed_on Timestamp NOT NULL,
@@ -77,8 +77,11 @@ impl Migrate for YdbConnection {
     ) -> BoxFuture<'m, Result<std::time::Duration,MigrateError>> {
 
         Box::pin(async move {
-            let mut tx = self.begin().await?;
+
             let start = Instant::now();
+            
+            let mut tx = self.begin().await?;
+            
 
             // Use a single transaction for the actual migration script and the essential bookeeping so we never
             // execute migrations twice. See https://github.com/launchbadge/sqlx/issues/1966.
@@ -102,26 +105,33 @@ impl Migrate for YdbConnection {
             .await?;
 
             tx.commit().await?;
-
+        
+        let elapsed = start.elapsed();
             // Update `elapsed_time`.
             // NOTE: The process may disconnect/die at this point, so the elapsed time value might be lost. We accept
             //       this small risk since this value is not super important.
-
-            let elapsed = start.elapsed();
-
+        
+            
+            let nanos = elapsed.as_nanos() as i64;
+            
             
             let _ = query(
                 r#"
                 
                     UPDATE _sqlx_migrations
-                    SET execution_time = $arg_1, checksum = checksum -- fix ydb error
+                    SET execution_time = $arg_1,
+                        description = description,
+                        checksum = checksum,
+                        installed_on = installed_on,
+                        success = success
                     WHERE version = $arg_2
                 "#,
             )
-            .bind(elapsed.as_nanos() as i64)
+            .bind(nanos)
             .bind(migration.version)
             .execute(self)
             .await?;
+            
 
             Ok(elapsed)
         })

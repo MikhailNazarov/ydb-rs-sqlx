@@ -1,6 +1,6 @@
 #[derive(Default)]
 pub struct YdbQueryResult {
-    pub(super) rows_affected: u64,
+    pub(crate) rows_affected: u64,
 }
 
 impl YdbQueryResult {
