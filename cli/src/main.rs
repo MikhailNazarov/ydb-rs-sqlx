@@ -5,10 +5,11 @@ use ydb_sqlx::connection::YdbConnection;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    
+    dotenv::dotenv().ok();
     // install global collector configured based on RUST_LOG env var.
     tracing_subscriber::fmt::init();
-    let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
+    let connection_string = env::var("YDB_CONNECTION_STRING")
+        .expect("YDB_CONNECTION_STRING must be set");
     
     let mut conn = YdbConnection::connect(&connection_string).await?;
    

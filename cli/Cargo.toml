@@ -9,3 +9,4 @@ ydb-sqlx = { path = "../ydb-sqlx" }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls"] }
 tokio = { version = "1.22", features = ["full"] }
 tracing-subscriber = "0.3"
+dotenv = "0.15"

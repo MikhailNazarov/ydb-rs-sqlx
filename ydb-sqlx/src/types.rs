@@ -92,6 +92,13 @@ ydb_type!(
 );
 
 ydb_type!(
+    chrono::DateTime<chrono::Utc>,
+    DataType::Timestamp,
+    DataType::Date,
+    DataType::DateTime
+);
+
+ydb_type!(
     String,
     DataType::Text,
     DataType::Json,
