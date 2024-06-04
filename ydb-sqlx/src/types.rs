@@ -138,6 +138,11 @@ impl<'q> Encode<'q, Ydb> for &'q str {
         IsNull::No
     }
 }
+impl Type<Ydb> for &str {
+    fn type_info() -> YdbTypeInfo {
+        YdbTypeInfo(DataType::Text)
+    }
+}
 
 pub enum Sign {
     Positive,
