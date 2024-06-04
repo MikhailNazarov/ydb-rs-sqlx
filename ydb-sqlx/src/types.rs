@@ -129,6 +129,16 @@ where
     }
 }
 
+impl<'q> Encode<'q, Ydb> for &'q str {
+    fn encode_by_ref(
+        &self,
+        buf: &mut <Ydb as sqlx_core::database::HasArguments<'q>>::ArgumentBuffer,
+    ) -> IsNull {
+        buf.push(ydb::Value::from(*self), YdbTypeInfo(DataType::Text));
+        IsNull::No
+    }
+}
+
 pub enum Sign {
     Positive,
     Negative,
