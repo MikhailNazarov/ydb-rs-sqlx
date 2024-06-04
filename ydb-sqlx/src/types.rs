@@ -1,4 +1,7 @@
-use std::{ops::Deref, time::Duration};
+use std::{
+    ops::Deref,
+    time::{Duration, Instant, SystemTime},
+};
 
 use sqlx_core::{
     decode::Decode,
@@ -141,6 +144,24 @@ impl<'q> Encode<'q, Ydb> for &'q str {
 impl Type<Ydb> for &str {
     fn type_info() -> YdbTypeInfo {
         YdbTypeInfo(DataType::Text)
+    }
+}
+
+impl Encode<'_, Ydb> for std::time::Instant {
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
+        let system_time = SystemTime::UNIX_EPOCH + Duration::from_secs(self.elapsed().as_secs());
+
+        buf.push(
+            ydb::Value::from(system_time),
+            YdbTypeInfo(DataType::Timestamp),
+        );
+        IsNull::No
+    }
+}
+
+impl Type<Ydb> for std::time::Instant {
+    fn type_info() -> YdbTypeInfo {
+        YdbTypeInfo(DataType::Timestamp)
     }
 }
 
