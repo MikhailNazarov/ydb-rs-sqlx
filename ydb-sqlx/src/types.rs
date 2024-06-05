@@ -108,6 +108,8 @@ ydb_type!(
     DataType::JsonDocument
 );
 
+ydb_type!(JsonDocument, DataType::JsonDocument);
+
 ydb_type!(
     Bytes,
     DataType::String,
@@ -172,6 +174,27 @@ pub enum Sign {
 pub struct Interval {
     duration: Duration,
     sign: Sign,
+}
+
+pub struct JsonDocument(pub String);
+
+impl From<&JsonDocument> for ydb::Value {
+    fn from(value: &JsonDocument) -> Self {
+        ydb::Value::JsonDocument(value.0.clone())
+    }
+}
+
+impl TryFrom<ydb::Value> for JsonDocument {
+    type Error = YdbError;
+
+    fn try_from(value: ydb::Value) -> Result<Self, Self::Error> {
+        match value {
+            ydb::Value::JsonDocument(json) => Ok(JsonDocument(json)),
+            _ => Err(ydb::YdbError::Custom(
+                "Value is not a json document".to_owned(),
+            )),
+        }
+    }
 }
 
 impl From<&Interval> for ydb::Value {
