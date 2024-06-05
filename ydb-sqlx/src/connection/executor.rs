@@ -118,7 +118,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                 .retry_transaction(|t| async {
                     let mut t = t;
                     let result = t.query(query.clone()).await?;
-                   
+                    t.commit().await?;
                     Ok(Some(result.into_results()))
                 })
                 .await
@@ -181,7 +181,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                     //YdbRow::from(row)
                     let mut t = t;
                     let result = t.query(query.clone()).await?;
-
+                    t.commit().await?;
                     if let Some(row) = result.into_only_row().ok() {
                         let row = YdbRow::from(row).map_err(|e| YdbOrCustomerError::from_err(e))?;
                         Ok(Some(row))
