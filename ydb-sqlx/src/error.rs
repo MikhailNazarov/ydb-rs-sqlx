@@ -40,19 +40,22 @@ pub(crate) fn err_ydb_or_customer_to_sqlx(e: YdbOrCustomerError) -> sqlx_core::e
 }
 
 pub(crate) fn err_ydb_to_sqlx(e: YdbError) -> sqlx_core::error::Error {
-    match e {
-        YdbError::Custom(_) => todo!(),
-        YdbError::Convert(_) => todo!(),
-        YdbError::NoRows => todo!(),
-        YdbError::InternalError(_) => todo!(),
-        YdbError::TransportDial(_) => todo!(),
-        YdbError::Transport(_) => todo!(),
-        YdbError::TransportGRPCStatus(_) => todo!(),
-        YdbError::YdbStatusError(e) => {
-            sqlx_core::Error::Database(Box::new(InternalError { message: e.message }))
-        }
-        _ => todo!(),
-    }
+    sqlx_core::error::Error::AnyDriverError(Box::new(e))
+
+    // sqlx_core::error::Error::frm(e)
+    // match e {
+    //     YdbError::Custom(_) => sqlx_core::error::DatabaseError(),
+    //     YdbError::Convert(_) => todo!(),
+    //     YdbError::NoRows => todo!(),
+    //     YdbError::InternalError(_) => todo!(),
+    //     YdbError::TransportDial(_) => todo!(),
+    //     YdbError::Transport(_) => todo!(),
+    //     YdbError::TransportGRPCStatus(_) => todo!(),
+    //     YdbError::YdbStatusError(e) => {
+    //         sqlx_core::Error::Database(Box::new(InternalError { message: e.message }))
+    //     }
+    //     _ => todo!(),
+    // }
 }
 
 #[derive(Debug)]
