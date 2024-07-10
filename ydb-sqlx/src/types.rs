@@ -44,18 +44,62 @@ macro_rules! ydb_type {
         impl Decode<'_, Ydb> for $native_type {
             fn decode(value: YdbValueRef<'_>) -> Result<Self, BoxDynError> {
                 let value: ydb::Value = value.deref().clone();
+                if let ydb::Value::Optional(x) = &value {}
                 value.try_into().map_err(|e: YdbError| e.into())
             }
         }
     };
 }
 
-ydb_type!(bool, DataType::Bool);
-ydb_type!(i8, DataType::Int8);
-ydb_type!(u8, DataType::Uint8);
-ydb_type!(u16, DataType::Uint16, DataType::Uint8);
-ydb_type!(i16, DataType::Int16, DataType::Int8, DataType::Uint8);
-ydb_type!(
+macro_rules! ydb_type_with_optional {
+    ($native_type:ty, $ydb_type_first:path $(,$ydb_type:path)* $(,)?) => {
+        #[allow(unused)]
+        impl Type<Ydb> for $native_type {
+            fn type_info() -> YdbTypeInfo {
+                YdbTypeInfo($ydb_type_first)
+            }
+        }
+
+        #[allow(unused)]
+        impl Encode<'_, Ydb> for $native_type {
+            fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
+                let value = ydb::Value::from(self.clone());
+                let is_null = match &value {
+                    ydb::Value::Null => IsNull::Yes,
+                    _ => IsNull::No,
+                };
+                buf.push(value, YdbTypeInfo($ydb_type_first));
+                is_null
+            }
+        }
+
+        #[allow(unused)]
+        impl Decode<'_, Ydb> for $native_type {
+            fn decode(value: YdbValueRef<'_>) -> Result<Self, BoxDynError> {
+                let value: ydb::Value = value.deref().clone();
+                match value {
+                    ydb::Value::Optional(v) => {
+                        if v.is_none() {
+                            Err(Box::new(ydb::YdbError::Custom("decode error".to_string())))
+                        } else {
+                            Option::<$native_type>::try_from(ydb::Value::Optional(v))
+                                .map_err(|e: YdbError| e.into())
+                                .map(|x| x.unwrap())
+                        }
+                    }
+                    value => value.try_into().map_err(|e: YdbError| e.into()),
+                }
+            }
+        }
+    };
+}
+
+ydb_type_with_optional!(bool, DataType::Bool);
+ydb_type_with_optional!(i8, DataType::Int8);
+ydb_type_with_optional!(u8, DataType::Uint8);
+ydb_type_with_optional!(u16, DataType::Uint16, DataType::Uint8);
+ydb_type_with_optional!(i16, DataType::Int16, DataType::Int8, DataType::Uint8);
+ydb_type_with_optional!(
     i32,
     DataType::Int32,
     DataType::Int16,
@@ -63,8 +107,8 @@ ydb_type!(
     DataType::Int8,
     DataType::Uint8
 );
-ydb_type!(u32, DataType::Uint32, DataType::Uint16, DataType::Uint8);
-ydb_type!(
+ydb_type_with_optional!(u32, DataType::Uint32, DataType::Uint16, DataType::Uint8);
+ydb_type_with_optional!(
     i64,
     DataType::Int64,
     DataType::Int32,
@@ -75,7 +119,7 @@ ydb_type!(
     DataType::Uint8
 );
 
-ydb_type!(
+ydb_type_with_optional!(
     u64,
     DataType::Uint64,
     DataType::Uint32,
@@ -85,23 +129,23 @@ ydb_type!(
 
 ydb_type!(Interval, DataType::Interval);
 
-ydb_type!(f32, DataType::Float);
-ydb_type!(f64, DataType::Double, DataType::Float);
-ydb_type!(
+ydb_type_with_optional!(f32, DataType::Float);
+ydb_type_with_optional!(f64, DataType::Double, DataType::Float);
+ydb_type_with_optional!(
     std::time::SystemTime,
     DataType::Timestamp,
     DataType::Date,
     DataType::DateTime
 );
 
-ydb_type!(
+ydb_type_with_optional!(
     chrono::DateTime<chrono::Utc>,
     DataType::Timestamp,
     DataType::Date,
     DataType::DateTime
 );
 
-ydb_type!(
+ydb_type_with_optional!(
     String,
     DataType::Text,
     DataType::Json,
@@ -110,7 +154,7 @@ ydb_type!(
 
 ydb_type!(JsonDocument, DataType::JsonDocument);
 
-ydb_type!(
+ydb_type_with_optional!(
     Bytes,
     DataType::String,
     DataType::Yson,

@@ -2451,6 +2451,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
+name = "tests"
+version = "0.1.0"
+dependencies = [
+ "sqlx",
+ "tokio",
+ "ydb-sqlx",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3203,7 +3212,7 @@ dependencies = [
 [[package]]
 name = "ydb"
 version = "0.9.2"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=e950963ab0291492ef65c0b07a4267f2288a6739#e950963ab0291492ef65c0b07a4267f2288a6739"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=c2a06a41662b1b45bc119269f657578fbecd9374#c2a06a41662b1b45bc119269f657578fbecd9374"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3242,7 +3251,7 @@ dependencies = [
 [[package]]
 name = "ydb-grpc"
 version = "0.0.14"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=e950963ab0291492ef65c0b07a4267f2288a6739#e950963ab0291492ef65c0b07a4267f2288a6739"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=c2a06a41662b1b45bc119269f657578fbecd9374#c2a06a41662b1b45bc119269f657578fbecd9374"
 dependencies = [
  "pbjson",
  "pbjson-build",

@@ -1,0 +1,9 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls"] }
+ydb-sqlx = { path = "../ydb-sqlx" }
+tokio = { version = "1.22", features = ["full"] }
