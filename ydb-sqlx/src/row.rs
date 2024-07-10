@@ -29,12 +29,7 @@ impl YdbRow {
                     index: column.name().to_owned(),
                     source: Box::new(e),
                 })?;
-            println!(
-                "WWW {}: {:?} {:?}",
-                column.name(),
-                value,
-                column.type_info()
-            );
+            
             values.push(YdbValue::new(value, column.type_info().clone()));
         }
 
