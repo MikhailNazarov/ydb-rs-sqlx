@@ -131,18 +131,12 @@ ydb_type!(Interval, DataType::Interval);
 
 ydb_type_with_optional!(f32, DataType::Float);
 ydb_type_with_optional!(f64, DataType::Double, DataType::Float);
-ydb_type_with_optional!(
-    std::time::SystemTime,
-    DataType::DateTime,
-    DataType::Timestamp,
-    DataType::Date,
-);
+ydb_type_with_optional!(std::time::SystemTime, DataType::Timestamp);
 
 ydb_type_with_optional!(
     chrono::DateTime<chrono::Utc>,
-    DataType::DateTime,
-    DataType::Timestamp,
     DataType::Date,
+    DataType::DateTime
 );
 
 ydb_type_with_optional!(
