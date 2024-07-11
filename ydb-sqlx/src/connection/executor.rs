@@ -11,6 +11,7 @@ use sqlx_core::executor::Executor;
 
 use sqlx_core::Error;
 use tracing::debug;
+use tracing::info;
 use ydb::Query;
 use ydb::YdbOrCustomerError;
 
@@ -198,24 +199,42 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
 
     fn prepare_with<'e, 'q: 'e>(
         self,
-        _sql: &'q str,
+        sql: &'q str,
         _parameters: &'e [YdbTypeInfo],
     ) -> futures::future::BoxFuture<'e, Result<YdbStatement<'q>, Error>>
     where
         'c: 'e,
     {
-        todo!()
-        //self.client.table_client().prepare_data_query()
+        Box::pin(async move {
+            let res = self.client.table_client().prepare_data_query(sql.to_owned()).await
+            .map_err(|e| err_ydb_to_sqlx(e))?;
+            println!("prepare_result: {:?}", res);
+            Ok(YdbStatement {
+                sql: todo!(),
+                metadata: todo!(),
+            })
+        })
     }
 
     fn describe<'e, 'q: 'e>(
         self,
-        _sql: &'q str,
+        sql: &'q str,
     ) -> futures::future::BoxFuture<'e, Result<Describe<Ydb>, Error>>
     where
         'c: 'e,
     {
-        todo!()
+        Box::pin( async move {
+            let explain_result = self.client.table_client().explain_data_query(sql.to_owned()).await
+            .map_err(|e| err_ydb_to_sqlx(e))?;
+            println!("explain_result: {:?}", explain_result);
+
+            Ok(Describe::<Ydb>{
+                columns: vec![],
+                parameters: todo!(),
+                nullable: todo!(),   
+            })
+        })
+       
         //self.client.table_client().explain_data_query()
     }
 }
