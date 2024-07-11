@@ -205,6 +205,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         'c: 'e,
     {
         todo!()
+        //self.client.table_client().prepare_data_query()
     }
 
     fn describe<'e, 'q: 'e>(
@@ -215,5 +216,6 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         'c: 'e,
     {
         todo!()
+        //self.client.table_client().explain_data_query()
     }
 }
