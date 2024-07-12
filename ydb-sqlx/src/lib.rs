@@ -16,7 +16,6 @@ pub mod connection;
 pub mod database;
 pub mod error;
 mod migration;
-mod minikql;
 pub mod query;
 pub mod row;
 pub mod statement;

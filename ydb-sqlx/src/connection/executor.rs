@@ -11,7 +11,6 @@ use sqlx_core::executor::Executor;
 
 use sqlx_core::Error;
 use tracing::debug;
-use tracing::info;
 use ydb::Query;
 use ydb::YdbOrCustomerError;
 
