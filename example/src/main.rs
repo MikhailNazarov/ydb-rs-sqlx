@@ -6,12 +6,32 @@ use ydb_sqlx::{with_name, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
-    let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
+    let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
     let pool = YdbPoolOptions::new()
         .connect(&connection_string).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
+
+    sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, description Utf8, PRIMARY KEY (id))")
+        .execute(&pool)
+        .await?;
+
+    let test_user_info = UserInfo {
+        id: 1,
+        name: "test".to_string(),
+        age: 33,
+        description: None
+    };
+
+
+    sqlx::query("INSERT INTO test2 (id, name, age, description) VALUES ( $arg_1, $arg_2, $arg_3, $arg_4)")
+        .bind(test_user_info.id)
+        .bind(test_user_info.name)
+        .bind(with_name("age", test_user_info.age))
+        .bind(test_user_info.description)
+        .execute(&pool)
+        .await?;
 
     let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
