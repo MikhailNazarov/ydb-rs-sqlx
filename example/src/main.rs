@@ -13,8 +13,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
+    let conn = pool.acquire().await?;
     sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, description Utf8, PRIMARY KEY (id))")
-        .execute(&pool)
+        .execute(conn.schema())
         .await?;
 
     let test_user_info = UserInfo {
@@ -25,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
 
-    sqlx::query("INSERT INTO test2 (id, name, age, description) VALUES ( $arg_1, $arg_2, $arg_3, $arg_4)")
+    sqlx::query("INSERT INTO test2 (id, name, age, description) VALUES ( $arg_1, $arg_2, $age, $arg_3)")
         .bind(test_user_info.id)
         .bind(test_user_info.name)
         .bind(with_name("age", test_user_info.age))

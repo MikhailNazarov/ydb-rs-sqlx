@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use rustring_builder::StringBuilder;
-use sqlx_core::{arguments::Arguments, type_info::TypeInfo, types::Type};
+use sqlx_core::{arguments::Arguments, encode::IsNull, type_info::TypeInfo, types::Type};
+use tracing::debug;
 
 use crate::typeinfo::YdbTypeInfo;
 
@@ -28,8 +29,14 @@ impl<'q> Arguments<'q> for YdbArguments {
     where
         T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
     {
+        //todo: NULL не добавляется в буфер
         _ = value.encode(&mut self.buffer);
+        //let is_null = value.encode(&mut self.buffer);
+        // if let IsNull::Yes = is_null {
+        //     self.buffer.push(ydb::Value::Null, T::type_info());
+        // }
         self.types.push(T::type_info());
+        //debug!("Types: {:?}", self.types);
     }
 }
 
@@ -90,10 +97,12 @@ impl YdbArgumentBuffer {
             value,
             type_info,
         ));
+        //debug!("Arguments: {:?}", self.arguments);
     }
 
     pub(crate) fn push_named(&mut self, name: String, value: ydb::Value, type_info: YdbTypeInfo) {
         self.arguments.push(Argument::new(name, value, type_info));
+        //debug!("Arguments: {:?}", self.arguments);
     }
 }
 
