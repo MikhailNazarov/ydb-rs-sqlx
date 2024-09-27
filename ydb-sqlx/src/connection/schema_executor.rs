@@ -1,3 +1,4 @@
+use crate::YdbPool;
 use crate::{database::Ydb, error::err_ydb_to_sqlx};
 use crate::query::YdbQueryResult;
 use crate::row::YdbRow;
@@ -10,14 +11,24 @@ use sqlx_core::Error;
 use ydb::TableClient;
 use std::fmt::{self, Debug};
 
+use super::YdbConnection;
 
-pub struct YdbSchemaExecutor {
-    client: TableClient
+
+
+pub enum YdbSchemaExecutor {
+    Client(TableClient),
+    Pool(YdbPool)
 }
 
 impl YdbSchemaExecutor{
-    pub(crate) fn new(client: TableClient) -> Self {
-        Self { client }
+    pub(crate) fn new(connection: &YdbConnection) -> Self {
+        Self::Client( connection.table_client() )
+    }
+    pub(crate) fn from_client(table_client: TableClient) -> Self {
+        Self::Client(table_client )
+    }
+    pub(crate) fn from_pool(pool: YdbPool) -> Self {
+        Self::Pool(pool.clone())
     }
 }
 impl Debug for YdbSchemaExecutor{
@@ -36,8 +47,19 @@ impl<'c> Executor<'c> for YdbSchemaExecutor {
     {
         Box::pin(async move{
             
-             self.client.retry_execute_scheme_query(query.sql()).await
-            .map_err(|e| err_ydb_to_sqlx(e))?;
+            match self {
+                YdbSchemaExecutor::Client(table_client) => {
+                    table_client.retry_execute_scheme_query(query.sql()).await
+                        .map_err(|e| err_ydb_to_sqlx(e))?;
+                    }
+                YdbSchemaExecutor::Pool(pool) => {
+                    pool.acquire().await?
+                        .table_client()
+                        .retry_execute_scheme_query(query.sql()).await
+                        .map_err(|e| err_ydb_to_sqlx(e))?;
+                }
+            }
+             
             
             Ok(YdbQueryResult::default())
         })

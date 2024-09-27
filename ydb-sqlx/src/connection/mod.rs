@@ -37,7 +37,7 @@ impl Deref for YdbConnection {
 
 impl YdbConnection{
     pub fn schema(&self)->YdbSchemaExecutor{
-        YdbSchemaExecutor::new(self.client.table_client())
+        YdbSchemaExecutor::new(self)
     }
 }
 

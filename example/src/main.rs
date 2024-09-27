@@ -2,7 +2,7 @@ use std::{env, str::FromStr};
 
 use tracing::{info, Level};
 
-use ydb_sqlx::{with_name, YdbPoolOptions};
+use ydb_sqlx::{with_name, YdbPoolExt, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
@@ -13,9 +13,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
-    let conn = pool.acquire().await?;
     sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, description Utf8, PRIMARY KEY (id))")
-        .execute(conn.schema())
+        .execute(pool.schema())
         .await?;
 
     let test_user_info = UserInfo {
