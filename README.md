@@ -46,12 +46,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+## Schema queries
+
+Schema queries should be executed with SchemaExecutor.
+
+You could use `pool.schema()` or `conn.schema()` to get SchemaExecutor:
+```
+sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, description Utf8, PRIMARY KEY (id))")
+        .execute(pool.schema())
+        .await?;
+```
+
+
+
 ## Arguments
 
 There are two binding available:
 
 - default unnamed - with generated name like `$arg_1`
 - named by `with_name` function. you can specify name starting with or without $, but in query you should use $-started name.
+    ```
+        bind(with_name("age", 30))
+    ```    
+- named by tuple ("name", value) 
+    ```
+        bind(("age", 30))
+    ```
 
 Ydb requires that every query params should be declared with `DECLARE` clause like this:
 
