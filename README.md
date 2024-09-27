@@ -64,7 +64,7 @@ sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, descr
 There are two binding available:
 
 - default unnamed - with generated name like `$arg_1`
-- named by `with_name` function. you can specify name starting with or without $, but in query you should use $-started name.
+- named by `with_name` function. you can specify name starting with or without dollr sign, but in query you should use $-started name.
     ```rust
         bind(with_name("age", 30))
     ```    
