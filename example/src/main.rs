@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
-            .bind(with_name("age", 30))
+            .bind(("age", 30))
             .bind(40)
             .fetch_all(&pool)
             .await?;
