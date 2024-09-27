@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
      let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test2 WHERE age >= $min_age AND age <= $max_age")
             .bind(("min_age", 30))
-            .bind(with_name("max_age", 40))
+            .bind(("max_age", 40))
             .fetch_all(&pool)
             .await?;
 
