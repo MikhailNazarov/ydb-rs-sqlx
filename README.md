@@ -34,9 +34,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = YdbPoolOptions::new().connect(&connection_string).await?;
 
      let users: Vec<UserInfo> =
-        sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
-            .bind(with_name("age", 30))
-            .bind(40)
+        sqlx::query_as("SELECT * FROM test2 WHERE age >= $min_age AND age <= $max_age")
+            .bind(("min_age", 30))
+            .bind(with_name("max_age", 40))
             .fetch_all(&pool)
             .await?;
 
