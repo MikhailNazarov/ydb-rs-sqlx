@@ -11,6 +11,7 @@ use sqlx_core::executor::Executor;
 
 use sqlx_core::Error;
 use tracing::debug;
+use tracing::info;
 use ydb::Query;
 use ydb::YdbOrCustomerError;
 
@@ -42,11 +43,14 @@ where
     sb.append(query.sql());
 
     let sql = sb.to_string();
+    //info!("{}", sql);
 
     let mut query = Query::new(sql);
     if !params.is_empty() {
+        //info!("PARAMS: {:?}", params);
         query = query.with_params(params);
     }
+    
     query
 }
 
@@ -71,7 +75,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
             E: Execute<'q, Self::Database>, {
 
         Box::pin(async move{
-            debug!("{}",query.sql());
+            //debug!("{}",query.sql());
             let query = build_query(query);
             let _result = if let Some(tr) = &mut self.transaction {
                 

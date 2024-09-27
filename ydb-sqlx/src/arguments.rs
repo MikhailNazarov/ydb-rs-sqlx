@@ -1,10 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, default};
 
 use rustring_builder::StringBuilder;
-use sqlx_core::{arguments::Arguments, encode::IsNull, type_info::TypeInfo, types::Type};
-use tracing::debug;
+use sqlx_core::{
+    arguments::Arguments,
+    encode::{Encode, IsNull},
+    type_info::TypeInfo,
+    types::Type,
+};
+use tracing::{debug, info};
+use ydb::ValueOptional;
 
-use crate::typeinfo::YdbTypeInfo;
+use crate::typeinfo::{DataType, YdbTypeInfo};
 
 use super::database::Ydb;
 
@@ -16,6 +22,31 @@ pub struct YdbArguments {
 
     // Buffer of encoded bind parameters
     buffer: YdbArgumentBuffer,
+}
+trait EncodeEx<'q>
+where
+    Self: Encode<'q, Ydb> + Sized,
+{
+    fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
+        Encode::encode(self, buffer)
+    }
+}
+
+impl<'q, T> EncodeEx<'q> for Option<T>
+where
+    T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
+    ydb::Value: From<Option<T>>,
+{
+    fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
+        match self {
+            Some(v) => Encode::encode(v, buffer),
+            None => {
+                let val: Option<T> = None;
+                buffer.push(ydb::Value::from(val), T::type_info());
+                IsNull::Yes
+            }
+        }
+    }
 }
 
 impl<'q> Arguments<'q> for YdbArguments {
@@ -30,11 +61,11 @@ impl<'q> Arguments<'q> for YdbArguments {
         T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
     {
         //todo: NULL не добавляется в буфер
-        _ = value.encode(&mut self.buffer);
-        //let is_null = value.encode(&mut self.buffer);
-        // if let IsNull::Yes = is_null {
-        //     self.buffer.push(ydb::Value::Null, T::type_info());
-        // }
+        //_ = value.encode(&mut self.buffer);
+        let is_null = value.encode(&mut self.buffer);
+        if let IsNull::Yes = is_null {
+            self.buffer.push(ydb::Value::Null, T::type_info());
+        }
         self.types.push(T::type_info());
         //debug!("Types: {:?}", self.types);
     }
@@ -71,17 +102,26 @@ impl Argument {
 
     pub(crate) fn declare(&self, sb: &mut StringBuilder) {
         sb.append(format!(
-            "DECLARE {} as {};\n",
+            "DECLARE {} as {}{};\n",
             self.name,
-            self.type_info.name()
+            self.type_info.name(),
+            if let ydb::Value::Null = self.value {
+                "?"
+            } else {
+                ""
+            }
         ));
-        // if self.type_info.is_optional() {
-        //     sb.append("?");
-        // }
     }
 
     pub(crate) fn add_to_params(self, params: &mut HashMap<String, ydb::Value>) {
-        params.insert(self.name(), self.value);
+        if let ydb::Value::Null = self.value {
+            params.insert(
+                self.name(),
+                ydb::Value::optional_from(ydb::Value::from(&self.type_info), None).unwrap(),
+            );
+        } else {
+            params.insert(self.name(), self.value);
+        }
     }
 
     pub(crate) fn name(&self) -> String {

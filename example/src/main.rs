@@ -24,6 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         description: None
     };
 
+    
+
 
     sqlx::query("INSERT INTO test2 (id, name, age, description) VALUES ( $arg_1, $arg_2, $age, $arg_3)")
         .bind(test_user_info.id)
