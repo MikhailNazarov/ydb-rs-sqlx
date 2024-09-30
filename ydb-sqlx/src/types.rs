@@ -1,6 +1,6 @@
 use std::{
     ops::Deref,
-    time::{Duration, Instant, SystemTime},
+    time::{Duration, SystemTime},
 };
 
 use sqlx_core::{

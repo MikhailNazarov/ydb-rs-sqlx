@@ -7,10 +7,8 @@ use sqlx_core::{
     type_info::TypeInfo,
     types::Type,
 };
-use tracing::{debug, info};
-use ydb::ValueOptional;
 
-use crate::typeinfo::{DataType, YdbTypeInfo};
+use crate::typeinfo::YdbTypeInfo;
 
 use super::database::Ydb;
 
@@ -23,31 +21,31 @@ pub struct YdbArguments {
     // Buffer of encoded bind parameters
     buffer: YdbArgumentBuffer,
 }
-trait EncodeEx<'q>
-where
-    Self: Encode<'q, Ydb> + Sized,
-{
-    fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
-        Encode::encode(self, buffer)
-    }
-}
+// trait EncodeEx<'q>
+// where
+//     Self: Encode<'q, Ydb> + Sized,
+// {
+//     fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
+//         Encode::encode(self, buffer)
+//     }
+// }
 
-impl<'q, T> EncodeEx<'q> for Option<T>
-where
-    T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
-    ydb::Value: From<Option<T>>,
-{
-    fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
-        match self {
-            Some(v) => Encode::encode(v, buffer),
-            None => {
-                let val: Option<T> = None;
-                buffer.push(ydb::Value::from(val), T::type_info());
-                IsNull::Yes
-            }
-        }
-    }
-}
+// impl<'q, T> EncodeEx<'q> for Option<T>
+// where
+//     T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
+//     ydb::Value: From<Option<T>>,
+// {
+//     fn encode_ex(&self, buffer: &mut YdbArgumentBuffer) -> IsNull {
+//         match self {
+//             Some(v) => Encode::encode(v, buffer),
+//             None => {
+//                 let val: Option<T> = None;
+//                 buffer.push(ydb::Value::from(val), T::type_info());
+//                 IsNull::Yes
+//             }
+//         }
+//     }
+// }
 
 impl<'q> Arguments<'q> for YdbArguments {
     type Database = Ydb;

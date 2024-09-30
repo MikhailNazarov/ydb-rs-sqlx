@@ -2,7 +2,7 @@ use std::{env, str::FromStr};
 
 use tracing::{info, Level};
 
-use ydb_sqlx::{with_name, YdbPoolExt, YdbPoolOptions};
+use ydb_sqlx::{with_name, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
@@ -19,9 +19,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let test_user_info = UserInfo {
-        id: 1u64,
+        id: 3u64,
         name: "test".to_string(),
-        age: 33u8,
+        age: 32u8,
         description: None
     };
 
