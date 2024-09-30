@@ -181,9 +181,34 @@ impl<'q> Encode<'q, Ydb> for &'q str {
         IsNull::No
     }
 }
+
+impl<'q, T> Encode<'q, Ydb> for (&'q str, T)
+where
+    T: Encode<'q, Ydb> + Clone,
+    ydb::Value: From<T>,
+{
+    fn encode_by_ref(
+        &self,
+        buf: &mut <Ydb as sqlx_core::database::HasArguments<'q>>::ArgumentBuffer,
+    ) -> IsNull {
+        buf.push_named(
+            self.0.to_owned(),
+            ydb::Value::from(self.1.clone()),
+            YdbTypeInfo(DataType::Text),
+        );
+        IsNull::No
+    }
+}
+
 impl Type<Ydb> for &str {
     fn type_info() -> YdbTypeInfo {
         YdbTypeInfo(DataType::Text)
+    }
+}
+
+impl<T: Type<Ydb>> Type<Ydb> for (&str, T) {
+    fn type_info() -> <Ydb as sqlx_core::database::Database>::TypeInfo {
+        <T as Type<Ydb>>::type_info()
     }
 }
 

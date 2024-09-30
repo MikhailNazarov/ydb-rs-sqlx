@@ -2,7 +2,7 @@ use std::{env, str::FromStr};
 
 use tracing::{info, Level};
 
-use ydb_sqlx::{with_name, YdbPoolOptions};
+use ydb_sqlx::{with_name, YdbPoolExt, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
