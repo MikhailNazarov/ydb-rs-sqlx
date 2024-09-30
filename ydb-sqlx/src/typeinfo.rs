@@ -1,7 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, time::SystemTime};
 
+use chrono::{Date, Utc, MIN_DATE};
 use sqlx_core::type_info::TypeInfo;
-use ydb::Bytes;
+use ydb::{Bytes, SignedInterval};
 
 use crate::types::Interval;
 
@@ -113,17 +114,17 @@ impl From<&YdbTypeInfo> for ydb::Value {
             DataType::Uint64 => ydb::Value::Uint64(0),
             DataType::Float => ydb::Value::Float(0.0),
             DataType::Double => ydb::Value::Double(0.0),
-            DataType::Date => todo!(),
-            DataType::DateTime => todo!(),
-            DataType::Timestamp => todo!(),
-            DataType::Interval => todo!(),
+            DataType::Date => ydb::Value::Date(Date::<Utc>::MIN_UTC),
+            DataType::DateTime => ydb::Value::DateTime(Utc::now()),
+            DataType::Timestamp => ydb::Value::Timestamp(SystemTime::now()),
+            DataType::Interval => ydb::Value::Interval(SignedInterval::default()),
             DataType::String => ydb::Value::Text(String::new()),
             DataType::Text => ydb::Value::Text(String::new()),
             DataType::Yson => ydb::Value::Yson(Bytes::default()),
             DataType::Json => ydb::Value::Json(String::new()),
             DataType::JsonDocument => ydb::Value::JsonDocument(String::new()),
-            DataType::List => ydb::Value::Void,
-            DataType::Struct => ydb::Value::Void,
+            DataType::List => ydb::Value::List(Box::<ydb::ValueList>::default()),
+            DataType::Struct => ydb::Value::Struct(ydb::ValueStruct::default()),
             DataType::Unknown => ydb::Value::Void,
         }
     }
