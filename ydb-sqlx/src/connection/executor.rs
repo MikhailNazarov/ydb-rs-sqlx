@@ -23,14 +23,15 @@ use sqlx_core::describe::Describe;
 
 use super::YdbConnection;
 
-fn build_query<'q, E: 'q>(mut query: E) -> Query
+fn build_query<'q, E: 'q>(mut query: E) -> Result<Query, Error>
 where
     E: Execute<'q, Ydb>,
 {
     let mut sb = StringBuilder::new();
     let mut params = HashMap::new();
 
-    if let Some(arguments) = query.take_arguments() {
+    if let Some(arguments) = query.take_arguments()
+        .map_err(|e| sqlx_core::error::Error::AnyDriverError(e))? {
         for arg in arguments.into_iter() {
             arg.declare(&mut sb);
             arg.add_to_params(&mut params);
@@ -49,7 +50,7 @@ where
         query = query.with_params(params);
     }
     
-    query
+    Ok(query)
 }
 
 // impl YdbConnection{
@@ -74,7 +75,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
 
         Box::pin(async move{
             //debug!("{}",query.sql());
-            let query = build_query(query);
+            let query = build_query(query)?;
             let _result = if let Some(tr) = &mut self.transaction {
                 
                  tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?
@@ -108,7 +109,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     {
     
         let result = Box::pin(async move {
-            let query = build_query(query);
+            let query = build_query(query)?;
             if let Some(tr) = &mut self.transaction {
                 
                 let result = tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?;
@@ -165,7 +166,7 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         E: Execute<'q, Ydb>,
     {
         Box::pin(async move {
-            let query = build_query(query);
+            let query = build_query(query)?;
             if let Some(tr) = &mut self.transaction {
                 let result = tr.query(query.clone()).await
                 .map_err(|e| err_ydb_to_sqlx(e))?;

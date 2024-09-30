@@ -1,9 +1,10 @@
-use std::{collections::HashMap, default};
+use std::collections::HashMap;
 
 use rustring_builder::StringBuilder;
 use sqlx_core::{
     arguments::Arguments,
     encode::{Encode, IsNull},
+    error::BoxDynError,
     type_info::TypeInfo,
     types::Type,
 };
@@ -54,18 +55,24 @@ impl<'q> Arguments<'q> for YdbArguments {
         //
     }
 
-    fn add<T>(&mut self, value: T)
+    fn add<T>(&mut self, value: T) -> Result<(), BoxDynError>
     where
-        T: 'q + Send + sqlx_core::encode::Encode<'q, Ydb> + sqlx_core::types::Type<Ydb>,
+        T: 'q + Encode<'q, Self::Database> + Type<Self::Database>,
     {
         //todo: NULL не добавляется в буфер
         //_ = value.encode(&mut self.buffer);
-        let is_null = value.encode(&mut self.buffer);
+        let is_null = value.encode(&mut self.buffer)?;
         if let IsNull::Yes = is_null {
             self.buffer.push(ydb::Value::Null, T::type_info());
         }
         self.types.push(T::type_info());
         //debug!("Types: {:?}", self.types);
+
+        Ok(())
+    }
+
+    fn len(&self) -> usize {
+        self.types.len()
     }
 }
 

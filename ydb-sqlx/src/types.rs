@@ -29,14 +29,14 @@ macro_rules! ydb_type {
 
         #[allow(unused)]
         impl Encode<'_, Ydb> for $native_type {
-            fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
+            fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
                 let value = ydb::Value::from(self.clone());
                 let is_null = match &value {
                     ydb::Value::Null => IsNull::Yes,
                     _ => IsNull::No,
                 };
                 buf.push(value, YdbTypeInfo($ydb_type_first));
-                is_null
+                Ok(is_null)
             }
         }
 
@@ -62,14 +62,14 @@ macro_rules! ydb_type_with_optional {
 
         #[allow(unused)]
         impl Encode<'_, Ydb> for $native_type {
-            fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
+            fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
                 let value = ydb::Value::from(self.clone());
                 let is_null = match &value {
                     ydb::Value::Null => IsNull::Yes,
                     _ => IsNull::No,
                 };
                 buf.push(value, YdbTypeInfo($ydb_type_first));
-                is_null
+                Ok(is_null)
             }
         }
 
@@ -161,24 +161,24 @@ impl<'q, T> Encode<'q, Ydb> for NamedArgument<T>
 where
     T: Type<Ydb> + Clone + Into<ydb::Value>,
 {
-    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> sqlx_core::encode::IsNull {
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
         let value = self.value().clone().into();
         let is_null = match &value {
             ydb::Value::Null => IsNull::Yes,
             _ => IsNull::No,
         };
         buf.push_named(self.name().to_owned(), value, T::type_info());
-        is_null
+        Ok(is_null)
     }
 }
 
 impl<'q> Encode<'q, Ydb> for &'q str {
     fn encode_by_ref(
         &self,
-        buf: &mut <Ydb as sqlx_core::database::HasArguments<'q>>::ArgumentBuffer,
-    ) -> IsNull {
+        buf: &mut <Ydb as sqlx_core::database::Database>::ArgumentBuffer<'q>,
+    ) -> Result<IsNull, BoxDynError> {
         buf.push(ydb::Value::from(*self), YdbTypeInfo(DataType::Text));
-        IsNull::No
+        Ok(IsNull::No)
     }
 }
 
@@ -189,14 +189,14 @@ where
 {
     fn encode_by_ref(
         &self,
-        buf: &mut <Ydb as sqlx_core::database::HasArguments<'q>>::ArgumentBuffer,
-    ) -> IsNull {
+        buf: &mut <Ydb as sqlx_core::database::Database>::ArgumentBuffer<'q>,
+    ) -> Result<IsNull, BoxDynError> {
         buf.push_named(
             self.0.to_owned(),
             ydb::Value::from(self.1.clone()),
             YdbTypeInfo(DataType::Text),
         );
-        IsNull::No
+        Ok(IsNull::No)
     }
 }
 
@@ -213,14 +213,14 @@ impl<T: Type<Ydb>> Type<Ydb> for (&str, T) {
 }
 
 impl Encode<'_, Ydb> for std::time::Instant {
-    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> IsNull {
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
         let system_time = SystemTime::UNIX_EPOCH + Duration::from_secs(self.elapsed().as_secs());
 
         buf.push(
             ydb::Value::from(system_time),
             YdbTypeInfo(DataType::Timestamp),
         );
-        IsNull::No
+        Ok(IsNull::No)
     }
 }
 
