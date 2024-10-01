@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use rustring_builder::StringBuilder;
 use sqlx_core::{executor::Execute, Error};
-use ydb::Query;
 
 use crate::database::Ydb;
 
