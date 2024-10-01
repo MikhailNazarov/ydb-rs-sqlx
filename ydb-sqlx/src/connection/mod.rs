@@ -10,7 +10,7 @@ use self::schema_executor::YdbSchemaExecutor;
 
 use super::database::Ydb;
 use futures_util::future;
-use sqlx_core::connection::{ConnectOptions, Connection};
+use sqlx_core::connection::{ConnectOptions, Connection, LogSettings};
 
 
 use sqlx_core::transaction::Transaction;
@@ -20,7 +20,8 @@ use ydb::Credentials;
 #[allow(unused)]
 pub struct YdbConnection{
     client: ydb::Client,
-    pub(crate) transaction: Option<Box<dyn ydb::Transaction>>
+    pub(crate) transaction: Option<Box<dyn ydb::Transaction>>,
+    pub(crate) log_settings: LogSettings
 }
 impl fmt::Debug for YdbConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -95,10 +96,8 @@ pub struct YdbConnectOptions {
     connection_string: String,
     connection_timeout: Duration,
     credentials: Option<Arc<Box<dyn Credentials>>>,
-    
+    log_settings:  LogSettings,
 }
-
-
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
@@ -119,16 +118,18 @@ impl ConnectOptions for YdbConnectOptions {
         })
     }
 
-    fn log_statements(self, _level: tracing::log::LevelFilter) -> Self {
-        todo!()
+    fn log_statements(mut self, level: tracing::log::LevelFilter) -> Self {
+        self.log_settings.log_statements(level);
+        self
     }
 
     fn log_slow_statements(
-        self,
-        _level: tracing::log::LevelFilter,
-        _duration: std::time::Duration,
+        mut self,
+        level: tracing::log::LevelFilter,
+        duration: std::time::Duration,
     ) -> Self {
-        todo!()
+        self.log_settings.log_slow_statements(level, duration);
+        self
     }
 }
 

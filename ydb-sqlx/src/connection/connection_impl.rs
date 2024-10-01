@@ -19,6 +19,6 @@ impl YdbConnection {
         timeout(options.connection_timeout, client.wait()).await??;
        
        
-        Ok(YdbConnection { client, transaction: None })
+        Ok(YdbConnection { client, transaction: None, log_settings: options.log_settings.clone() })
     }
 }

@@ -8,7 +8,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
-    let pool = YdbPoolOptions::new()
+    let pool = YdbPoolOptions::new()        
         .connect(&connection_string).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let test_user_info = UserInfo {
-        id: 4u64,
+        id: 7u64,
         name: "test".to_string(),
         age: 32u8,
         description: None

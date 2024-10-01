@@ -5,8 +5,10 @@ use crate::row::YdbRow;
 use crate::statement::YdbStatement;
 use crate::typeinfo::YdbTypeInfo;
 use futures::future::BoxFuture;
+use sqlx_core::connection::LogSettings;
 use sqlx_core::describe::Describe;
 use sqlx_core::executor::Executor;
+use sqlx_core::logger::QueryLogger;
 use sqlx_core::Error;
 use ydb::TableClient;
 use std::fmt::{self, Debug};
@@ -14,21 +16,32 @@ use std::fmt::{self, Debug};
 use super::YdbConnection;
 
 
+pub struct YdbSchemaExecutor {
+    inner: YdbSchemaExecutorInner,
+    log_settings: LogSettings,
+}
 
-pub enum YdbSchemaExecutor {
+pub enum YdbSchemaExecutorInner {
     Client(TableClient),
     Pool(YdbPool)
 }
 
 impl YdbSchemaExecutor{
     pub(crate) fn new(connection: &YdbConnection) -> Self {
-        Self::Client( connection.table_client() )
+        Self{
+            inner: YdbSchemaExecutorInner::Client(connection.table_client()),
+            log_settings: connection.log_settings.clone()
+        }
     }
     // pub(crate) fn from_client(table_client: TableClient) -> Self {
     //     Self::Client(table_client )
     // }
     pub(crate) fn from_pool(pool: YdbPool) -> Self {
-        Self::Pool(pool.clone())
+        Self{
+            inner: YdbSchemaExecutorInner::Pool(pool),
+            log_settings: LogSettings::default() //todo: fix
+        }
+        //Self::Pool(pool.clone())
     }
 }
 impl Debug for YdbSchemaExecutor{
@@ -45,14 +58,15 @@ impl<'c> Executor<'c> for YdbSchemaExecutor {
         'c: 'e,
         E: sqlx_core::executor::Execute<'q, Ydb>,
     {
+        
         Box::pin(async move{
-            
-            match self {
-                YdbSchemaExecutor::Client(table_client) => {
+            let _logger = QueryLogger::new(query.sql(), self.log_settings.clone());
+            match self.inner {
+                YdbSchemaExecutorInner::Client(table_client) => {
                     table_client.retry_execute_scheme_query(query.sql()).await
                         .map_err(|e| err_ydb_to_sqlx(e))?;
                     }
-                YdbSchemaExecutor::Pool(pool) => {
+                YdbSchemaExecutorInner::Pool(pool) => {
                     pool.acquire().await?
                         .table_client()
                         .retry_execute_scheme_query(query.sql()).await
