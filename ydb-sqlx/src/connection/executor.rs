@@ -10,6 +10,7 @@ use sqlx_core::executor::Executor;
 use sqlx_core::logger::QueryLogger;
 use sqlx_core::try_stream;
 use sqlx_core::Error;
+use tracing::info;
 use crate::error::err_ydb_or_customer_to_sqlx;
 
 use crate::error::err_ydb_to_sqlx;
@@ -29,16 +30,29 @@ impl YdbConnection {
     ) ->  Result<impl Stream<Item = Result<Either<YdbQueryResult, YdbRow>, Error>> + 'e, Error> {
 
         
-        let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
-        let query: ydb::Query = query.clone().into();
+        
+       
        
 
         let result = Box::pin(async move {
             
+            
             if let Some(tr) = &mut self.transaction {
-                
+
+                let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
+                let query: ydb::Query = query.clone().into();
+                let query = query.with_stats(ydb::QueryStatsMode::Full);
+
                 let result = tr.query(query).await.map_err(|e| err_ydb_to_sqlx(e))?;
+                if let Some(stats) = result.stats(){
+                    info!("{:?}", stats);
+                }
+                let rows =result.rows_len();
+                
                 let results = result.into_results();
+                for _ in 1..=rows{
+                    logger.increment_rows_returned();    
+                }
                 //todo: get rows and call increase_rows_affected
                 //logger.increase_rows_affected(rows_affected);
                 Ok(Some(results))
@@ -46,8 +60,23 @@ impl YdbConnection {
                 self.client
                     .table_client()
                     .retry_transaction(|t| async {
+
+                        let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
+                        let query: ydb::Query = query.clone().into();
+                        let query = query.with_stats(ydb::QueryStatsMode::Full);
+
                         let mut t = t;
                         let result = t.query(query.clone()).await?;
+                        let rows =result.rows_len();
+                        //info!("rows: {}", rows);
+
+                        for _ in 1..=rows{
+                            logger.increment_rows_returned();    
+                        }
+                       
+                        if let Some(stats) = result.stats(){
+                            info!("{:?}", stats);
+                        }
                         t.commit().await?;
                         //todo: get rows and call increase_rows_affected
                         //logger.increase_rows_affected(rows_affected);
@@ -92,40 +121,6 @@ impl YdbConnection {
 
 impl<'c> Executor<'c> for &'c mut YdbConnection {
     type Database = Ydb;
-
-    // fn execute<'e, 'q: 'e, E: 'q>(
-    //         self,
-    //         query: E,
-    //     ) -> BoxFuture<'e, Result<YdbQueryResult, Error>>
-    //     where
-    //         'c: 'e,
-    //         E: Execute<'q, Self::Database>, {
-
-    //     Box::pin(async move{
-    //         //debug!("{}",query.sql());
-    //         let query = build_query(query)?;
-    //         let _result = if let Some(tr) = &mut self.transaction {
-                
-    //              tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?
-                
-    //         }else{
-    //             self.client
-    //             .table_client()
-    //             .retry_transaction(|t| async {
-    //                 let mut t = t;
-    //                 let result = t.query(query.clone()).await?;
-    //                 t.commit().await?;
-    //                 Ok(result)
-    //             })
-    //             .await.map_err(|e| err_ydb_or_customer_to_sqlx(e))?
-    //         };
-
-    //         Ok(YdbQueryResult{
-    //            rows_affected: 0 //todo!
-    //         })
-    //     })
-        
-    // }
 
     fn fetch_many<'e, 'q: 'e, E: 'q>(
         self,
@@ -175,39 +170,6 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
             }
             Ok(ret)
         })
-
-        // Box::pin(async move {
-        //     let query = build_query(query)?;
-        //     if let Some(tr) = &mut self.transaction {
-        //         let result = tr.query(query.clone()).await
-        //         .map_err(|e| err_ydb_to_sqlx(e))?;
-
-        //             if let Some(row) = result.into_only_row().ok() {
-        //                 let row = YdbRow::from(row)?;
-        //                 Ok(Some(row))
-        //             } else {
-        //                 Ok(None)
-        //             }
-        //     }else{
-        //     self.client
-        //         .table_client()
-        //         .retry_transaction(|t| async {
-        //             //YdbRow::from(row)
-        //             let mut t = t;
-        //             let result = t.query(query.clone()).await?;
-        //             t.commit().await?;
-        //             if let Some(row) = result.into_only_row().ok() {
-        //                 let row = YdbRow::from(row).map_err(|e| YdbOrCustomerError::from_err(e))?;
-        //                 Ok(Some(row))
-        //             } else {
-        //                 Ok(None)
-        //             }
-        //         })
-        //         .await
-        //         .map_err(|e| err_ydb_or_customer_to_sqlx(e))
-        //     }
-            
-        // })
     }
 
     fn prepare_with<'e, 'q: 'e>(

@@ -99,6 +99,23 @@ pub struct YdbConnectOptions {
     log_settings:  LogSettings,
 }
 
+impl YdbConnectOptions{
+
+    pub fn  log_statements(mut self, level: tracing::log::LevelFilter) -> Self {
+        self.log_settings.log_statements(level);
+        self
+    }
+
+    pub fn log_slow_statements(
+        mut self,
+        level: tracing::log::LevelFilter,
+        duration: std::time::Duration,
+    ) -> Self {
+        self.log_settings.log_slow_statements(level, duration);
+        self
+    }
+}
+
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
 
@@ -117,20 +134,19 @@ impl ConnectOptions for YdbConnectOptions {
             Ok(connection)
         })
     }
-
-    fn log_statements(mut self, level: tracing::log::LevelFilter) -> Self {
-        self.log_settings.log_statements(level);
-        self
+    
+    fn  log_statements(self, level: tracing::log::LevelFilter) -> Self {
+        self.log_statements(level)
     }
 
     fn log_slow_statements(
-        mut self,
+        self,
         level: tracing::log::LevelFilter,
         duration: std::time::Duration,
     ) -> Self {
-        self.log_settings.log_slow_statements(level, duration);
-        self
+        self.log_slow_statements(level, duration)
     }
+
 }
 
 

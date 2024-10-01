@@ -2,14 +2,19 @@ use std::{env, str::FromStr};
 
 use tracing::{info, Level};
 
-use ydb_sqlx::{with_name, YdbPoolOptions};
+use tracing_log::log::LevelFilter;
+use ydb_sqlx::{connection::YdbConnectOptions, with_name, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
+    let options = YdbConnectOptions::from_str(&connection_string)?
+        .log_statements(LevelFilter::Info); 
+    
+
     let pool = YdbPoolOptions::new()        
-        .connect(&connection_string).await?;
+        .connect_with(options).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
@@ -19,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let test_user_info = UserInfo {
-        id: 7u64,
+        id: 10u64,
         name: "test".to_string(),
         age: 32u8,
         description: None

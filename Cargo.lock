@@ -552,6 +552,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
+ "tracing-log",
  "tracing-subscriber",
  "ydb-sqlx",
 ]
@@ -3305,7 +3306,7 @@ dependencies = [
 [[package]]
 name = "ydb"
 version = "0.9.2"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=4ecdbc158a2c24c5ed6ca5633e911363c1566019#4ecdbc158a2c24c5ed6ca5633e911363c1566019"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=07db348446ba2bf5eec8911e0e9c80e17b08c248#07db348446ba2bf5eec8911e0e9c80e17b08c248"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3344,7 +3345,7 @@ dependencies = [
 [[package]]
 name = "ydb-grpc"
 version = "0.0.14"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=4ecdbc158a2c24c5ed6ca5633e911363c1566019#4ecdbc158a2c24c5ed6ca5633e911363c1566019"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=07db348446ba2bf5eec8911e0e9c80e17b08c248#07db348446ba2bf5eec8911e0e9c80e17b08c248"
 dependencies = [
  "pbjson",
  "pbjson-build",

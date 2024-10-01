@@ -33,15 +33,13 @@ impl YdbSchemaExecutor{
             log_settings: connection.log_settings.clone()
         }
     }
-    // pub(crate) fn from_client(table_client: TableClient) -> Self {
-    //     Self::Client(table_client )
-    // }
+   
     pub(crate) fn from_pool(pool: YdbPool) -> Self {
+        let log_settings = pool.connect_options().log_settings.clone();
         Self{
             inner: YdbSchemaExecutorInner::Pool(pool),
-            log_settings: LogSettings::default() //todo: fix
+            log_settings
         }
-        //Self::Pool(pool.clone())
     }
 }
 impl Debug for YdbSchemaExecutor{
