@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let test_user_info = UserInfo {
-        id: 3u64,
+        id: 4u64,
         name: "test".to_string(),
         age: 32u8,
         description: None

@@ -24,9 +24,9 @@ impl YdbSchemaExecutor{
     pub(crate) fn new(connection: &YdbConnection) -> Self {
         Self::Client( connection.table_client() )
     }
-    pub(crate) fn from_client(table_client: TableClient) -> Self {
-        Self::Client(table_client )
-    }
+    // pub(crate) fn from_client(table_client: TableClient) -> Self {
+    //     Self::Client(table_client )
+    // }
     pub(crate) fn from_pool(pool: YdbPool) -> Self {
         Self::Pool(pool.clone())
     }

@@ -1,10 +1,8 @@
 use std::{fmt::Display, time::SystemTime};
 
-use chrono::{Date, Utc, MIN_DATE};
+use chrono::{Date, Utc};
 use sqlx_core::type_info::TypeInfo;
 use ydb::{Bytes, SignedInterval};
-
-use crate::types::Interval;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct YdbTypeInfo(pub(crate) DataType);
