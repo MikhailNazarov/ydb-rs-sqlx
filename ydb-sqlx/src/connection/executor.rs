@@ -21,6 +21,7 @@ use crate::typeinfo::YdbTypeInfo;
 use crate::{database::Ydb, query::YdbQueryResult, row::YdbRow};
 use sqlx_core::describe::Describe;
 
+use super::StatsMode;
 use super::YdbConnection;
 
 impl YdbConnection {
@@ -29,19 +30,16 @@ impl YdbConnection {
         query: ParsedQuery        
     ) ->  Result<impl Stream<Item = Result<Either<YdbQueryResult, YdbRow>, Error>> + 'e, Error> {
 
-        
-        
-       
-       
-
         let result = Box::pin(async move {
-            
-            
             if let Some(tr) = &mut self.transaction {
 
                 let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
                 let query: ydb::Query = query.clone().into();
-                let query = query.with_stats(ydb::QueryStatsMode::Full);
+
+                let query = match &self.stats_mode {
+                    StatsMode::None => {query},
+                    mode => { query.with_stats(mode.into()) }
+                };
 
                 let result = tr.query(query).await.map_err(|e| err_ydb_to_sqlx(e))?;
                 if let Some(stats) = result.stats(){
@@ -63,7 +61,10 @@ impl YdbConnection {
 
                         let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
                         let query: ydb::Query = query.clone().into();
-                        let query = query.with_stats(ydb::QueryStatsMode::Full);
+                        let query = match &self.stats_mode {
+                            StatsMode::None => {query},
+                            mode => { query.with_stats(mode.into()) }
+                        };
 
                         let mut t = t;
                         let result = t.query(query.clone()).await?;

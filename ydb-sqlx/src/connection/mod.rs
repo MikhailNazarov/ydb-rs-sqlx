@@ -2,7 +2,7 @@ mod connection_impl;
 mod executor;
 pub mod schema_executor;
 
-use std::fmt;
+use std::{default, fmt};
 use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
@@ -17,11 +17,13 @@ use sqlx_core::transaction::Transaction;
 use ydb::{AccessTokenCredentials, AnonymousCredentials, MetadataUrlCredentials, ServiceAccountCredentials, StaticCredentials};
 use ydb::Credentials;
 
+/// A connection to the YDB database.
 #[allow(unused)]
 pub struct YdbConnection{
     client: ydb::Client,
     pub(crate) transaction: Option<Box<dyn ydb::Transaction>>,
-    pub(crate) log_settings: LogSettings
+    pub(crate) log_settings: LogSettings,
+    pub(crate) stats_mode: StatsMode
 }
 impl fmt::Debug for YdbConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -37,6 +39,7 @@ impl Deref for YdbConnection {
 }
 
 impl YdbConnection{
+    /// Get a schema executor
     pub fn schema(&self)->YdbSchemaExecutor{
         YdbSchemaExecutor::new(self)
     }
@@ -97,6 +100,27 @@ pub struct YdbConnectOptions {
     connection_timeout: Duration,
     credentials: Option<Arc<Box<dyn Credentials>>>,
     log_settings:  LogSettings,
+    stats_mode: StatsMode
+}
+
+#[derive(Clone, Debug, Default)]
+pub enum StatsMode{
+    #[default]
+    None,
+    Basic,
+    Full,
+    Profile,
+}
+
+impl From<&StatsMode> for ydb::QueryStatsMode {
+    fn from(mode: &StatsMode) -> Self {
+        match mode {
+            StatsMode::None => ydb::QueryStatsMode::None,
+            StatsMode::Basic => ydb::QueryStatsMode::Basic,
+            StatsMode::Full => ydb::QueryStatsMode::Full,
+            StatsMode::Profile => ydb::QueryStatsMode::Profile,
+        }
+    }
 }
 
 impl YdbConnectOptions{
@@ -112,6 +136,11 @@ impl YdbConnectOptions{
         duration: std::time::Duration,
     ) -> Self {
         self.log_settings.log_slow_statements(level, duration);
+        self
+    }
+
+    pub fn with_stats(mut self, mode: StatsMode) -> Self {
+        self.stats_mode = mode;
         self
     }
 }
