@@ -1,34 +1,40 @@
-use std::env;
+#[cfg(test)]
+mod tests{
+    pub use std::env;
+    pub use sqlx::{Acquire, Executor};
+    pub use ydb_sqlx::{with_name, YdbPool, YdbPoolOptions};
 
-use sqlx::{Acquire, Executor};
-use ydb_sqlx::{with_name, YdbPool, YdbPoolOptions};
-
-struct TestContext{
-    pool: ydb_sqlx::YdbPool
+    pub struct TestContext{
+        pool: ydb_sqlx::YdbPool
+    }
+    
+    
+    impl TestContext{
+        pub async fn new()->TestContext{
+            let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
+            let pool = YdbPoolOptions::new()
+                .connect(&connection_string).await.unwrap();
+            TestContext{pool}
+        }
+    
+        pub fn pool(&self)->&YdbPool{
+            &self.pool
+        }
+    
+       
+    }
 }
 
-impl TestContext{
-    pub async fn new()->TestContext{
-        let connection_string = env::var("YDB_CONNECTION_STRING").unwrap();
-        let pool = YdbPoolOptions::new()
-            .connect(&connection_string).await.unwrap();
-        TestContext{pool}
-    }
 
-    pub fn pool(&self)->&YdbPool{
-        &self.pool
-    }
-
-   
-}
 
 
 
 #[tokio::test]
 pub async fn test_opt(){
+    use tests::*;
     let ctx = TestContext::new().await;
 
-    let mut tr = ctx.pool.begin().await.unwrap();
+    let mut tr = ctx.pool().begin().await.unwrap();
     let conn = tr.acquire().await.unwrap();
    
     sqlx::query(r#"
@@ -62,9 +68,10 @@ pub async fn test_opt(){
 
 #[tokio::test]
 pub async fn test_explain(){
+    use tests::*;
     let ctx = TestContext::new().await;
 
-    let mut tr = ctx.pool.begin().await.unwrap();
+    let mut tr = ctx.pool().begin().await.unwrap();
     let conn = tr.acquire().await.unwrap();
    
     sqlx::query(r#"

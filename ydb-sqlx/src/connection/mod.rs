@@ -2,7 +2,7 @@ mod connection_impl;
 mod executor;
 pub mod schema_executor;
 
-use std::{default, fmt};
+use std::fmt;
 use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
