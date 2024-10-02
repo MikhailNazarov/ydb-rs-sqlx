@@ -3,7 +3,7 @@ use std::{env, str::FromStr};
 use tracing::{info, Level};
 
 use tracing_log::log::LevelFilter;
-use ydb_sqlx::{connection::YdbConnectOptions, with_name, YdbPoolOptions};
+use ydb_sqlx::{connection::YdbConnectOptions, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
@@ -30,7 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         description: None
     };
 
-    
+    sqlx::query("DELETE FROM test4 where id = $id")
+        .bind(("id",test_user_info.id))
+        .execute(&pool)
+        .await?;
 
 
     sqlx::query("INSERT INTO test4 (id, name, age, description) VALUES ( $arg_1, $arg_2, $age, $arg_3)")
