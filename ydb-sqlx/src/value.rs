@@ -22,10 +22,6 @@ impl<'r> YdbValueRef<'r> {
     pub(crate) fn new(value: &'r YdbValue) -> Self {
         Self { value_ref: value }
     }
-
-    // pub(crate) fn as_ref(&self) -> &'r YdbValue {
-    //     self.value_ref
-    // }
 }
 
 impl<'r> ValueRef<'r> for YdbValueRef<'r> {
