@@ -99,7 +99,11 @@ pub(crate) struct Argument {
 impl Argument {
     pub(crate) fn new(name: String, value: ydb::Value, type_info: YdbTypeInfo) -> Self {
         Self {
-            name,
+            name: if name.starts_with("$") {
+                name
+            } else {
+                format!("${}", name)
+            },
             value,
             type_info,
         }
