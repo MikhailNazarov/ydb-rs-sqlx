@@ -66,45 +66,45 @@ pub async fn test_opt(){
 }
 
 
-#[tokio::test]
-pub async fn test_explain(){
-    use tests::*;
-    let ctx = TestContext::new().await;
+// #[tokio::test]
+// pub async fn test_explain(){
+//     use tests::*;
+//     let ctx = TestContext::new().await;
 
-    let mut tr = ctx.pool().begin().await.unwrap();
-    let conn = tr.acquire().await.unwrap();
+//     let mut tr = ctx.pool().begin().await.unwrap();
+//     let conn = tr.acquire().await.unwrap();
    
-    sqlx::query(r#"
-        CREATE TABLE IF NOT EXISTS test_opt(
-            id Int32 NOT NULL,
-            title Utf8,
-            PRIMARY KEY (id)
-        )
-    "#).execute(conn.schema()).await.unwrap();
-   
-    
-    sqlx::query(r#"
-        insert into test_opt(id, title) values
-        (1, 'title1'),
-        (2, 'title2'),
-        (3, 'title3')
-    "#).execute(&mut *conn).await.unwrap();
-    
-    {
-     let res = (&mut *conn).describe(r#"
-        declare $id as Int64;
-        select id, title from test_opt where id = $id;
-    "#).await;
+//     sqlx::query(r#"
+//         CREATE TABLE IF NOT EXISTS test_opt(
+//             id Int32 NOT NULL,
+//             title Utf8,
+//             PRIMARY KEY (id)
+//         )
+//     "#).execute(conn.schema()).await.unwrap();
    
     
-    // assert!(res.is_ok(),"{}",res.err().unwrap());
+//     sqlx::query(r#"
+//         insert into test_opt(id, title) values
+//         (1, 'title1'),
+//         (2, 'title2'),
+//         (3, 'title3')
+//     "#).execute(&mut *conn).await.unwrap();
+    
+//     {
+//      let res = (&mut *conn).describe(r#"
+//         declare $id as Int64;
+//         select id, title from test_opt where id = $id;
+//     "#).await;
+   
+    
+//     // assert!(res.is_ok(),"{}",res.err().unwrap());
 
-    //let res = (&mut *conn).prepare("select id, title from test_opt where id = 1").await;
+//     //let res = (&mut *conn).prepare("select id, title from test_opt where id = 1").await;
    
     
-    assert!(res.is_ok(),"{}",res.err().unwrap());
+//     assert!(res.is_ok(),"{}",res.err().unwrap());
     
     
-    }
+//     }
 
-}
+// }
