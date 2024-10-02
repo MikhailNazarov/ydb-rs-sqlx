@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let test_user_info = UserInfo {
-        id: 10u64,
+        id: 13u64,
         name: "test".to_string(),
         age: 32u8,
         description: None
@@ -36,14 +36,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     sqlx::query("INSERT INTO test4 (id, name, age, description) VALUES ( $arg_1, $arg_2, $age, $arg_3)")
         .bind(test_user_info.id)
         .bind(test_user_info.name)
-        .bind(with_name("age", test_user_info.age))
+        .bind(("age", test_user_info.age))
         .bind(test_user_info.description)
         .execute(&pool)
         .await?;
 
     let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
-            .bind(with_name("age", 30))
+            .bind(("age", 30))
             .bind(40)
             .fetch_all(&pool)
             .await?;

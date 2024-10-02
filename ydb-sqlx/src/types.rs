@@ -184,7 +184,7 @@ impl<'q> Encode<'q, Ydb> for &'q str {
 
 impl<'q, T> Encode<'q, Ydb> for (&'q str, T)
 where
-    T: Encode<'q, Ydb> + Clone,
+    T: Encode<'q, Ydb> + Type<Ydb> + Clone,
     ydb::Value: From<T>,
 {
     fn encode_by_ref(
@@ -194,7 +194,7 @@ where
         buf.push_named(
             self.0.to_owned(),
             ydb::Value::from(self.1.clone()),
-            YdbTypeInfo(DataType::Text),
+            T::type_info(),
         );
         Ok(IsNull::No)
     }
