@@ -4,9 +4,11 @@ use tracing::{info, Level};
 
 use tracing_log::log::LevelFilter;
 use ydb_sqlx::{connection::YdbConnectOptions, YdbPoolOptions};
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
+   
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
     let options = YdbConnectOptions::from_str(&connection_string)?
@@ -45,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let users: Vec<UserInfo> =
-        sqlx::query_as("SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
+        sqlx::query_as!(UserInfo, "SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
             .bind(("age", 30))
             .bind(40)
             .fetch_all(&pool)

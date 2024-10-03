@@ -1,11 +1,12 @@
 
 
-use std::sync::Arc;
+use std::sync::Once;
+use driver::install_drivers;
 use sqlx_core::describe::Describe;
-use futures::future::BoxFuture;
+use futures::{future::BoxFuture, stream::BoxStream};
 use itertools::Either;
 use sqlx_core::{
-    any::{self, *}, connection::{ConnectOptions, Connection}, database::Database, executor::Executor, ext::ustr::UStr, row::Row, Error, Result
+    any::{self, *}, connection::{ConnectOptions, Connection}, database::Database, executor::Executor, ext::ustr::UStr, Error, Result
 };
 
 sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);
@@ -66,11 +67,16 @@ impl AnyConnectionBackend for YdbConnection {
         Ok(self)
     }
 
+    
+
+    
+
     fn fetch_many<'q>(
         &'q mut self,
-        _query: &'q str,
-        _arguments: Option<AnyArguments<'q>>,
-    ) -> futures::prelude::stream::BoxStream<'q, Result<itertools::Either<AnyQueryResult, AnyRow>>>
+        query: &'q str,
+        persistent: bool,
+        arguments: Option<AnyArguments<'q>>,
+    ) -> BoxStream<'q, Result<Either<AnyQueryResult, AnyRow>,sqlx_core::Error>>
     {
         // let persistent = arguments.is_some();
         // let args = arguments.as_ref().map(AnyArguments::convert_to);
@@ -90,9 +96,10 @@ impl AnyConnectionBackend for YdbConnection {
 
     fn fetch_optional<'q>(
         &'q mut self,
-        _query: &'q str,
-        _arguments: Option<AnyArguments<'q>>,
-    ) -> BoxFuture<'q, Result<Option<AnyRow>>> {
+        query: &'q str,
+        persistent: bool,
+        arguments: Option<AnyArguments<'q>>,
+    ) -> BoxFuture<'q, Result<Option<AnyRow>, sqlx_core::Error>>{
         //let persistent = arguments.is_some();
         //let args = arguments.as_ref().map(AnyArguments::convert_to);
 
@@ -181,7 +188,7 @@ impl<'a> TryFrom<&'a YdbTypeInfo> for AnyTypeInfo {
                 DataType::Int64 | DataType::Uint64 => AnyTypeInfoKind::BigInt,
                 DataType::Float => AnyTypeInfoKind::Real,
                 DataType::Double => AnyTypeInfoKind::Double,
-                DataType::Bytes => AnyTypeInfoKind::Blob,      
+                DataType::String => AnyTypeInfoKind::Blob,      
                 DataType::Text | DataType::Json => AnyTypeInfoKind::Text,
                 _ => {
                     return Err(Error::AnyDriverError(
@@ -239,4 +246,15 @@ fn map_result(res: YdbQueryResult) -> AnyQueryResult {
         rows_affected: res.rows_affected(),
         last_insert_id: None,
     }
+}
+
+pub fn install_driver() {
+    static ONCE: Once = Once::new();
+
+    ONCE.call_once(|| {
+        install_drivers(&[
+            crate::any::DRIVER,
+        ])
+        .expect("drivers already installed")
+    });
 }

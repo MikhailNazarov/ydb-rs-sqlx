@@ -1,5 +1,5 @@
 use sqlx_core::{
-    database::{Database, HasArguments, HasStatement, HasStatementCache, HasValueRef},
+    database::{Database, HasStatementCache},
     migrate::MigrateDatabase,
 };
 
@@ -16,7 +16,6 @@ use super::{
     typeinfo::YdbTypeInfo,
     value::YdbValue,
 };
-
 #[derive(Debug)]
 pub struct Ydb {}
 
@@ -37,18 +36,11 @@ impl Database for Ydb {
 
     const NAME: &'static str = "Ydb";
 
-    const URL_SCHEMES: &'static [&'static str] = &["grpc", "grpcs", "ydb", "ydbs"];
-}
-impl<'r> HasValueRef<'r> for Ydb {
-    type Database = Ydb;
+    const URL_SCHEMES: &'static [&'static str] = &["grpcs"];
 
-    type ValueRef = YdbValueRef<'r>;
-}
+    type ValueRef<'r> = YdbValueRef<'r>;
 
-impl HasArguments<'_> for Ydb {
-    type Database = Ydb;
-
-    type Arguments = YdbArguments;
+    type Arguments<'q> = YdbArguments;
 
     type ArgumentBuffer<'q> = YdbArgumentBuffer;
 

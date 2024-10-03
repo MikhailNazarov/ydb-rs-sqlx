@@ -5,7 +5,6 @@ use sqlx_core::executor::Executor;
 use sqlx_core::query_as::query_as;
 use futures::future::{ok, BoxFuture};
 use sqlx_core::migrate::{AppliedMigration, Migrate, MigrateDatabase, MigrateError, Migration};
-use sqlx_core::migrate::{AppliedMigration, Migrate, MigrateDatabase, MigrateError, Migration};
 use sqlx_core::query::query;
 use ydb::Bytes;
 use crate::connection::YdbConnection;

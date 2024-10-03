@@ -150,7 +150,7 @@ ydb_type!(JsonDocument, DataType::JsonDocument);
 
 ydb_type_with_optional!(
     Bytes,
-    DataType::Bytes,
+    DataType::String,
     DataType::Yson,
     DataType::Text,
     DataType::Json,
