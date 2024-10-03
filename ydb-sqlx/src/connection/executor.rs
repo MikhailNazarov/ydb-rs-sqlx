@@ -1,79 +1,90 @@
-use std::collections::HashMap;
 
+use futures::pin_mut;
+use futures::Stream;
+use futures::TryStreamExt;
 use futures_core::stream::BoxStream;
-
 use futures::StreamExt;
 use itertools::Either;
-use rustring_builder::StringBuilder;
 use sqlx_core::executor::Execute;
 use sqlx_core::executor::Executor;
-
+use sqlx_core::logger::QueryLogger;
+use sqlx_core::try_stream;
 use sqlx_core::Error;
-use ydb::Query;
-use ydb::YdbOrCustomerError;
-
+use tracing::info;
 use crate::error::err_ydb_or_customer_to_sqlx;
 
 use crate::error::err_ydb_to_sqlx;
+use crate::query::build_query;
+use crate::query::ParsedQuery;
 use crate::statement::YdbStatement;
 use crate::typeinfo::YdbTypeInfo;
 use crate::{database::Ydb, query::YdbQueryResult, row::YdbRow};
+use sqlx_core::describe::Describe;
 
+use super::StatsMode;
 use super::YdbConnection;
 
-fn build_query<'q, E: 'q>(mut query: E) -> Query
-where
-    E: Execute<'q, Ydb>,
-{
-    let mut sb = StringBuilder::new();
-    let mut params = HashMap::new();
+impl YdbConnection {
 
-    if let Some(arguments) = query.take_arguments() {
-        for arg in arguments.into_iter() {
-            arg.declare(&mut sb);
-            arg.add_to_params(&mut params);
-        }
-        sb.append_line("");
-    }
+    pub(crate) async fn run<'e, 'c: 'e, 'q: 'e>( &'c mut self,
+        query: ParsedQuery        
+    ) ->  Result<impl Stream<Item = Result<Either<YdbQueryResult, YdbRow>, Error>> + 'e, Error> {
 
-    sb.append(query.sql());
-
-    let sql = sb.to_string();
-
-    let mut query = Query::new(sql);
-    if !params.is_empty() {
-        query = query.with_params(params);
-    }
-    query
-}
-
-impl<'c> Executor<'c> for &'c mut YdbConnection {
-    type Database = Ydb;
-
-    fn fetch_many<'e, 'q: 'e, E: 'q>(
-        self,
-        query: E,
-    ) -> BoxStream<'e, Result<sqlx_core::Either<YdbQueryResult, YdbRow>, Error>>
-    where
-        'c: 'e,
-        E: Execute<'q, Ydb>,
-    {
         let result = Box::pin(async move {
-            let query = build_query(query);
             if let Some(tr) = &mut self.transaction {
-                let result = tr.query(query.clone()).await.map_err(|e| err_ydb_to_sqlx(e))?;
-                Ok(Some(result.into_results()))
-            } else {
-            self.client
-                .table_client()
-                .retry_transaction(|t| async {
-                    let mut t = t;
-                    let result = t.query(query.clone()).await?;
 
-                    Ok(Some(result.into_results()))
-                })
-                .await
-                .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+                let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
+                let query: ydb::Query = query.clone().into();
+
+                let query = match &self.stats_mode {
+                    StatsMode::None => {query},
+                    mode => { query.with_stats(mode.into()) }
+                };
+
+                let result = tr.query(query).await.map_err(|e| err_ydb_to_sqlx(e))?;
+                if let Some(stats) = result.stats(){
+                    info!("{:?}", stats);
+                }
+                let rows =result.rows_len();
+                
+                let results = result.into_results();
+                for _ in 1..=rows{
+                    logger.increment_rows_returned();    
+                }
+                //todo: get rows and call increase_rows_affected
+                //logger.increase_rows_affected(rows_affected);
+                Ok(Some(results))
+            } else {                
+                self.client
+                    .table_client()
+                    .retry_transaction(|t| async {
+
+                        let mut logger = QueryLogger::new(query.sql(), self.log_settings.clone());
+                        let query: ydb::Query = query.clone().into();
+                        let query = match &self.stats_mode {
+                            StatsMode::None => {query},
+                            mode => { query.with_stats(mode.into()) }
+                        };
+
+                        let mut t = t;
+                        let result = t.query(query.clone()).await?;
+                        let rows =result.rows_len();
+                        //info!("rows: {}", rows);
+
+                        for _ in 1..=rows{
+                            logger.increment_rows_returned();    
+                        }
+                       
+                        if let Some(stats) = result.stats(){
+                            info!("{:?}", stats);
+                        }
+                        t.commit().await?;
+                        //todo: get rows and call increase_rows_affected
+                        //logger.increase_rows_affected(rows_affected);
+                        Ok(Some(result.into_results()))
+                    })
+                    .await
+                    .map_err(|e| err_ydb_or_customer_to_sqlx(e))
             }
         });
         let stream = futures::stream::once(result)
@@ -97,12 +108,40 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
                         Err(e) => Err(e),
                     })
                     .chain(err);
+                
 
                 futures::stream::iter(rows)
             })
             .flatten();
 
-        Box::pin(stream)
+        Ok(Box::pin(stream))        
+    }
+}
+
+
+
+impl<'c> Executor<'c> for &'c mut YdbConnection {
+    type Database = Ydb;
+
+    fn fetch_many<'e, 'q: 'e, E: 'q>(
+        self,
+        query: E,
+    ) -> BoxStream<'e, Result<sqlx_core::Either<YdbQueryResult, YdbRow>, Error>>
+    where
+        'c: 'e,
+        E: Execute<'q, Ydb>,
+    {
+
+        Box::pin(try_stream! {
+            let query = build_query(query)?;
+            let s = self.run(query).await?;
+            pin_mut!(s);
+
+            while let Some(v) = s.try_next().await? {
+                r#yield!(v);
+            }
+            Ok(())
+        })
     }
 
     fn fetch_optional<'e, 'q: 'e, E: 'q>(
@@ -113,58 +152,65 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         'c: 'e,
         E: Execute<'q, Ydb>,
     {
+        
         Box::pin(async move {
-            let query = build_query(query);
-            if let Some(tr) = &mut self.transaction {
-                let result = tr.query(query.clone()).await
-                .map_err(|e| err_ydb_to_sqlx(e))?;
+            let query = build_query(query)?;
+            let s = self.run(query).await?;
+            pin_mut!(s);
 
-                    if let Some(row) = result.into_only_row().ok() {
-                        let row = YdbRow::from(row)?;
-                        Ok(Some(row))
-                    } else {
-                        Ok(None)
-                    }
-            }else{
-            self.client
-                .table_client()
-                .retry_transaction(|t| async {
-                    //YdbRow::from(row)
-                    let mut t = t;
-                    let result = t.query(query.clone()).await?;
-
-                    if let Some(row) = result.into_only_row().ok() {
-                        let row = YdbRow::from(row).map_err(|e| YdbOrCustomerError::from_err(e))?;
-                        Ok(Some(row))
-                    } else {
-                        Ok(None)
-                    }
-                })
-                .await
-                .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+            // With deferred constraints we need to check all responses as we
+            // could get a OK response (with uncommitted data), only to get an
+            // error response after (when the deferred constraint is actually
+            // checked).
+            let mut ret = None;
+            while let Some(result) = s.try_next().await? {
+                match result {
+                    Either::Right(r) if ret.is_none() => ret = Some(r),
+                    _ => {}
+                }
             }
-            
+            Ok(ret)
         })
     }
 
     fn prepare_with<'e, 'q: 'e>(
         self,
-        _sql: &'q str,
+        sql: &'q str,
         _parameters: &'e [YdbTypeInfo],
     ) -> futures::future::BoxFuture<'e, Result<YdbStatement<'q>, Error>>
     where
         'c: 'e,
     {
-        todo!()
+        Box::pin(async move {
+            let res = self.client.table_client().prepare_data_query(sql.to_owned()).await
+            .map_err(|e| err_ydb_to_sqlx(e))?;
+            println!("prepare_result: {:?}", res);
+            Ok(YdbStatement {
+                sql: todo!(),
+                metadata: todo!(),
+            })
+        })
     }
 
     fn describe<'e, 'q: 'e>(
         self,
-        _sql: &'q str,
-    ) -> futures::future::BoxFuture<'e, Result<sqlx_core::describe::Describe<Ydb>, Error>>
+        sql: &'q str,
+    ) -> futures::future::BoxFuture<'e, Result<Describe<Ydb>, Error>>
     where
         'c: 'e,
     {
-        todo!()
+        Box::pin( async move {
+            let explain_result = self.client.table_client().explain_data_query(sql.to_owned()).await
+            .map_err(|e| err_ydb_to_sqlx(e))?;
+            println!("explain_result: {:?}", explain_result);
+
+            Ok(Describe::<Ydb>{
+                columns: vec![],
+                parameters: todo!(),
+                nullable: todo!(),   
+            })
+        })
+       
+        //self.client.table_client().explain_data_query()
     }
 }

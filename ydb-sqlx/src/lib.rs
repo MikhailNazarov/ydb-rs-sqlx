@@ -1,4 +1,5 @@
 use arguments::YdbArguments;
+use connection::schema_executor::YdbSchemaExecutor;
 use connection::YdbConnection;
 use database::Ydb;
 use row::YdbRow;
@@ -40,3 +41,13 @@ impl_column_index_for_row!(YdbRow);
 impl_column_index_for_statement!(YdbStatement);
 impl_encode_for_option!(Ydb);
 pub use arguments::with_name;
+
+pub trait YdbPoolExt {
+    fn schema(&self) -> YdbSchemaExecutor;
+}
+
+impl YdbPoolExt for YdbPool {
+    fn schema(&self) -> YdbSchemaExecutor {
+        YdbSchemaExecutor::from_pool(self.clone())
+    }
+}

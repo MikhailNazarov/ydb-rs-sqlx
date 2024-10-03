@@ -1,6 +1,6 @@
 # Sqlx intergration for ydb-rs-sdk
 
-This crate provides Sqlx integration for ydb-rs-sdk. It is in under active development.
+This crate provides Sqlx integration for [ydb-rs-sdk](https://github.com/ydb-platform/ydb-rs-sdk). It is in under active development.
 
 ## Basic examples
 
@@ -34,9 +34,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool = YdbPoolOptions::new().connect(&connection_string).await?;
 
      let users: Vec<UserInfo> =
-        sqlx::query_as("SELECT * FROM test2 WHERE age > $age AND age < $arg_1")
-            .bind(with_name("age", 30))
-            .bind(40)
+        sqlx::query_as("SELECT * FROM test2 WHERE age >= $min_age AND age <= $max_age")
+            .bind(("min_age", 30))
+            .bind(("max_age", 40))
             .fetch_all(&pool)
             .await?;
 
@@ -46,12 +46,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+## Schema queries
+
+Schema queries should be executed with SchemaExecutor.
+
+You could use `pool.schema()` or `conn.schema()` to get SchemaExecutor:
+```rust
+sqlx::query("CREATE TABLE test2 (id Uint64 NOT NULL, name Utf8, age UInt8, description Utf8, PRIMARY KEY (id))")
+        .execute(pool.schema())
+        .await?;
+```
+
+
+
 ## Arguments
 
 There are two binding available:
 
 - default unnamed - with generated name like `$arg_1`
-- named by `with_name` function. you can specify name starting with or without $, but in query you should use $-started name.
+- named by `with_name` function. you can specify name starting with or without dollr sign, but in query you should use $-started name.
+    ```rust
+        bind(with_name("age", 30))
+    ```    
+- named by tuple ("name", value) 
+    ```rust
+        bind(("age", 30))
+    ```
 
 Ydb requires that every query params should be declared with `DECLARE` clause like this:
 

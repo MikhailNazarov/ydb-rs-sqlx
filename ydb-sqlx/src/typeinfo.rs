@@ -1,6 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, time::SystemTime};
 
+use chrono::{Date, Utc};
 use sqlx_core::type_info::TypeInfo;
+use ydb::{Bytes, SignedInterval};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct YdbTypeInfo(pub(crate) DataType);
@@ -90,6 +92,38 @@ pub(crate) enum DataType {
     //Optional(Box<DataType>),
     List,
     Struct,
+}
+
+impl From<&YdbTypeInfo> for ydb::Value {
+    fn from(value: &YdbTypeInfo) -> Self {
+        match value.0 {
+            DataType::Void => ydb::Value::Void,
+            DataType::Null => ydb::Value::Null,
+            DataType::Bool => ydb::Value::Bool(false),
+            DataType::Int8 => ydb::Value::Int8(0),
+            DataType::Uint8 => ydb::Value::Uint8(0),
+            DataType::Int16 => ydb::Value::Int16(0),
+            DataType::Uint16 => ydb::Value::Uint16(0),
+            DataType::Int32 => ydb::Value::Int32(0),
+            DataType::Uint32 => ydb::Value::Uint32(0),
+            DataType::Int64 => ydb::Value::Int64(0),
+            DataType::Uint64 => ydb::Value::Uint64(0),
+            DataType::Float => ydb::Value::Float(0.0),
+            DataType::Double => ydb::Value::Double(0.0),
+            DataType::Date => ydb::Value::Date(Date::<Utc>::MIN_UTC),
+            DataType::DateTime => ydb::Value::DateTime(Utc::now()),
+            DataType::Timestamp => ydb::Value::Timestamp(SystemTime::now()),
+            DataType::Interval => ydb::Value::Interval(SignedInterval::default()),
+            DataType::String => ydb::Value::Text(String::new()),
+            DataType::Text => ydb::Value::Text(String::new()),
+            DataType::Yson => ydb::Value::Yson(Bytes::default()),
+            DataType::Json => ydb::Value::Json(String::new()),
+            DataType::JsonDocument => ydb::Value::JsonDocument(String::new()),
+            DataType::List => ydb::Value::List(Box::<ydb::ValueList>::default()),
+            DataType::Struct => ydb::Value::Struct(ydb::ValueStruct::default()),
+            DataType::Unknown => ydb::Value::Void,
+        }
+    }
 }
 
 impl From<&ydb::Value> for DataType {

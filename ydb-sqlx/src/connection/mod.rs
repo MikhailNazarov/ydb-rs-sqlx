@@ -1,23 +1,29 @@
 mod connection_impl;
 mod executor;
+pub mod schema_executor;
 
 use std::fmt;
 use std::ops::Deref;
 use std::{str::FromStr, sync::Arc, time::Duration};
 
+use self::schema_executor::YdbSchemaExecutor;
+
 use super::database::Ydb;
 use futures_util::future;
-use sqlx_core::connection::{ConnectOptions, Connection};
+use sqlx_core::connection::{ConnectOptions, Connection, LogSettings};
 
 
 use sqlx_core::transaction::Transaction;
 use ydb::{AccessTokenCredentials, AnonymousCredentials, MetadataUrlCredentials, ServiceAccountCredentials, StaticCredentials};
 use ydb::Credentials;
 
+/// A connection to the YDB database.
 #[allow(unused)]
 pub struct YdbConnection{
     client: ydb::Client,
-    pub(crate) transaction: Option<Box<dyn ydb::Transaction>>
+    pub(crate) transaction: Option<Box<dyn ydb::Transaction>>,
+    pub(crate) log_settings: LogSettings,
+    pub(crate) stats_mode: StatsMode
 }
 impl fmt::Debug for YdbConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -31,6 +37,14 @@ impl Deref for YdbConnection {
         &self.client
     }
 }
+
+impl YdbConnection{
+    /// Get a schema executor
+    pub fn schema(&self)->YdbSchemaExecutor{
+        YdbSchemaExecutor::new(self)
+    }
+}
+
 
 impl Connection for YdbConnection {
     type Database = Ydb;
@@ -85,10 +99,51 @@ pub struct YdbConnectOptions {
     connection_string: String,
     connection_timeout: Duration,
     credentials: Option<Arc<Box<dyn Credentials>>>,
-    
+    log_settings:  LogSettings,
+    stats_mode: StatsMode
 }
 
+#[derive(Clone, Debug, Default)]
+pub enum StatsMode{
+    #[default]
+    None,
+    Basic,
+    Full,
+    Profile,
+}
 
+impl From<&StatsMode> for ydb::QueryStatsMode {
+    fn from(mode: &StatsMode) -> Self {
+        match mode {
+            StatsMode::None => ydb::QueryStatsMode::None,
+            StatsMode::Basic => ydb::QueryStatsMode::Basic,
+            StatsMode::Full => ydb::QueryStatsMode::Full,
+            StatsMode::Profile => ydb::QueryStatsMode::Profile,
+        }
+    }
+}
+
+impl YdbConnectOptions{
+
+    pub fn  log_statements(mut self, level: tracing::log::LevelFilter) -> Self {
+        self.log_settings.log_statements(level);
+        self
+    }
+
+    pub fn log_slow_statements(
+        mut self,
+        level: tracing::log::LevelFilter,
+        duration: std::time::Duration,
+    ) -> Self {
+        self.log_settings.log_slow_statements(level, duration);
+        self
+    }
+
+    pub fn with_stats(mut self, mode: StatsMode) -> Self {
+        self.stats_mode = mode;
+        self
+    }
+}
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
@@ -108,18 +163,19 @@ impl ConnectOptions for YdbConnectOptions {
             Ok(connection)
         })
     }
-
-    fn log_statements(self, _level: tracing::log::LevelFilter) -> Self {
-        todo!()
+    
+    fn  log_statements(self, level: tracing::log::LevelFilter) -> Self {
+        self.log_statements(level)
     }
 
     fn log_slow_statements(
         self,
-        _level: tracing::log::LevelFilter,
-        _duration: std::time::Duration,
+        level: tracing::log::LevelFilter,
+        duration: std::time::Duration,
     ) -> Self {
-        todo!()
+        self.log_slow_statements(level, duration)
     }
+
 }
 
 

@@ -5,6 +5,7 @@ use sqlx_core::executor::Executor;
 use sqlx_core::query_as::query_as;
 use futures::future::{ok, BoxFuture};
 use sqlx_core::migrate::{AppliedMigration, Migrate, MigrateDatabase, MigrateError, Migration};
+use sqlx_core::migrate::{AppliedMigration, Migrate, MigrateDatabase, MigrateError, Migration};
 use sqlx_core::query::query;
 use ydb::Bytes;
 use crate::connection::YdbConnection;
@@ -14,9 +15,9 @@ impl Migrate for YdbConnection {
     fn ensure_migrations_table(&mut self) -> BoxFuture<'_, Result<(), MigrateError>> {
         Box::pin(async move {
             
-            self.execute(r#"
+            query(r#"
                 CREATE TABLE _sqlx_migrations (
-                    version Int64,
+                    version Int64 NOT NULL,
                     description Utf8 NOT NULL,
                     checksum String NOT NULL,
                     installed_on Timestamp NOT NULL,
@@ -24,7 +25,7 @@ impl Migrate for YdbConnection {
                     execution_time Int64 NOT NULL,
                     PRIMARY KEY (version)
                 );
-            "#).await?;
+            "#).execute(self.schema()).await?;
 
             Ok(())
         })
@@ -77,15 +78,18 @@ impl Migrate for YdbConnection {
     ) -> BoxFuture<'m, Result<std::time::Duration,MigrateError>> {
 
         Box::pin(async move {
-            let mut tx = self.begin().await?;
+
             let start = Instant::now();
+            
+            let mut tx = self.begin().await?;
+            
 
             // Use a single transaction for the actual migration script and the essential bookeeping so we never
             // execute migrations twice. See https://github.com/launchbadge/sqlx/issues/1966.
             // The `execution_time` however can only be measured for the whole transaction. This value _only_ exists for
             // data lineage and debugging reasons, so it is not super important if it is lost. So we initialize it to -1
             // and update it once the actual transaction completed.
-            let _ = tx.execute(&*migration.sql).await?;
+            let _ = tx.schema().execute(&*migration.sql).await?;
 
             let _ = query::<Ydb>(
                 r#"
@@ -102,26 +106,33 @@ impl Migrate for YdbConnection {
             .await?;
 
             tx.commit().await?;
-
+        
+        let elapsed = start.elapsed();
             // Update `elapsed_time`.
             // NOTE: The process may disconnect/die at this point, so the elapsed time value might be lost. We accept
             //       this small risk since this value is not super important.
-
-            let elapsed = start.elapsed();
-
+        
+            
+            let nanos = elapsed.as_nanos() as i64;
+            
             
             let _ = query(
                 r#"
                 
                     UPDATE _sqlx_migrations
-                    SET execution_time = $arg_1
+                    SET execution_time = $arg_1,
+                        description = description,
+                        checksum = checksum,
+                        installed_on = installed_on,
+                        success = success
                     WHERE version = $arg_2
                 "#,
             )
-            .bind(elapsed.as_nanos() as i64)
+            .bind(nanos)
             .bind(migration.version)
             .execute(self)
             .await?;
+            
 
             Ok(elapsed)
         })

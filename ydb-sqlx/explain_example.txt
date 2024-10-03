@@ -1,0 +1,171 @@
+ExplainQueryResult { plan: "{
+  "meta":
+    {
+      "version":"0.2",
+      "type":"query"
+    },
+  "tables":
+    [
+      {
+        "name":"/ru-central1/b1gk593pa5ofakubbsq6/etnarvc8n5jfbafhns7j/test_opt",
+        "reads":
+          [
+            {
+              "columns":
+                [
+                  "id",
+                  "title"
+                ],
+              "limit":"1001",
+              "type":"Scan"
+            }
+          ]
+      }
+    ],
+  "Plan":
+    {
+      "Node Type":"Query",
+      "PlanNodeType":"Query",
+      "Plans":
+        [
+          {
+            "Node Type":"ResultSet_1",
+            "PlanNodeId":8,
+            "PlanNodeType":"ResultSet",
+            "Plans":
+              [
+                {
+                  "Node Type":"Limit",
+                  "Operators":
+                    [
+                      {
+                        "Inputs":
+                          [
+                            {
+                              "ExternalPlanNodeId":6
+                            }
+                          ],
+                        "Limit":"1001",
+                        "Name":"Limit"
+                      }
+                    ],
+                  "PlanNodeId":7,
+                  "Plans":
+                    [
+                      {
+                        "Node Type":"UnionAll",
+                        "PlanNodeId":6,
+                        "PlanNodeType":"Connection",
+                        "Plans":
+                          [
+                            {
+                              "Node Type":"Limit",
+                              "Operators":
+                                [
+                                  {
+                                    "Inputs":
+                                      [
+                                        {
+                                          "ExternalPlanNodeId":4
+                                        }
+                                      ],
+                                    "Limit":"1001",
+                                    "Name":"Limit"
+                                  }
+                                ],
+                              "PlanNodeId":5,
+                              "Plans":
+                                [
+                                  {
+                                    "Node Type":"TableRangeScan",
+                                    "Operators":
+                                      [
+                                        {
+                                          "Inputs":
+                                            [
+                                            ],
+                                          "Name":"TableRangeScan",
+                                          "ReadColumns":
+                                            [
+                                              "id",
+                                              "title"
+                                            ],
+                                          "ReadLimit":"1001",
+                                          "ReadRanges":"%kqp%tx_result_binding_0_0",
+                                          "ReadRangesExpectedSize":"1",
+                                          "ReadRangesKeys":
+                                            [
+                                              "id"
+                                            ],
+                                          "ReadRangesPointPrefixLen":"1",
+                                          "Table":"test_opt"
+                                        }
+                                      ],
+                                    "PlanNodeId":4,
+                                    "Tables":
+                                      [
+                                        "test_opt"
+                                      ]
+                                  }
+                                ]
+                            }
+                          ]
+                      }
+                    ]
+                }
+              ]
+          },
+          {
+            "Node Type":"Precompute_0",
+            "Parent Relationship":"InitPlan",
+            "PlanNodeId":2,
+            "PlanNodeType":"Materialize",
+            "Plans":
+              [
+                {
+                  "Node Type":"Stage",
+                  "PlanNodeId":1
+                }
+              ],
+            "Subplan Name":"CTE precompute_0_0"
+          }
+        ]
+    }
+}", 
+
+
+ast: 
+
+(
+(declare $id (DataType 'Int64))
+(declare %kqp%tx_result_binding_0_0 (TupleType (ListType (TupleType (TupleType (OptionalType (DataType 'Int32)) (DataType 'Int32)) (TupleType (OptionalType (DataType 'Int32)) (DataType 'Int32))))))
+(let $1 (DataType 'Int32))
+(let $2 (OptionalType $1))
+(let $3 '('('"_logical_id" '744) '('"_id" '"ac8bd7c0-676cf2a6-cd6cdf48-a6ad72c2") '('"_partition_mode" '"single")))
+(let $4 (DqPhyStage '() (lambda '() (block '(
+  (let $22 (SafeCast $id $2))
+  (let $23 (Int32 '1))
+  (let $24 '($22 $23))
+  (let $25 (If (Coalesce (== $22 (Int32 '2147483647)) (Bool 'true)) $24 '((+ $22 $23) (Int32 '0))))
+  (let $26 (TupleType $1 $2 $1))
+  (return (ToStream (Just '((RangeFinalize (RangeMultiply (Uint64 '10000) (RangeUnion (If (Exists $22) (RangeCreate (AsList '($24 $25))) (List (ListType (TupleType $26 $26)))))))))))
+))) $3))KqpPhysicalQuery
+(let $5 (DqCnValue (TDqOutput $4 '0)))
+(let $6 (KqpPhysicalTx '($4) '($5) '('('"$id")) '('('"type" '"compute"))))
+(let $7 (KqpTable '"/ru-central1/b1gk593pa5ofakubbsq6/etnarvc8n5jfbafhns7j/test_opt" '"72075186413272658:285" '"" '1))
+(let $8 '('"id" '"title"))
+(let $9 (Uint64 '"1001"))
+(let $10 '"%kqp%tx_result_binding_0_0")
+(let $11 (TupleType $2 $1))
+(let $12 (TupleType (ListType (TupleType $11 $11))))
+(let $13 '('('"UsedKeyColumns" '('"id")) '('"ExpectedMaxRanges" '1) '('"PointPrefixLen" '1)))
+(let $14 (KqpRowsSourceSettings $7 $8 '('('"ItemsLimit" $9) '('"Sequential" '1)) %kqp%tx_result_binding_0_0 $13))
+(let $15 (lambda '($27) (FromFlow (Take (ToFlow $27) $9))))
+(let $16 (DqPhyStage '((DqSource (DataSource '"KqpReadRangesSource") $14)) $15 '('('"_logical_id" '794) '('"_id" '"7957c04c-77fdf6aa-2f0bed75-761dc76e"))))
+(let $17 (DqCnUnionAll (TDqOutput $16 '0)))
+(let $18 (DqPhyStage '($17) $15 '('('"_logical_id" '807) '('"_id" '"6a2b3b24-92db24c8-8b006e69-95de2de6"))))
+(let $19 (DqCnResult (TDqOutput $18 '0) $8))
+(let $20 (KqpTxResultBinding $12 '0 '0))
+(let $21 (KqpPhysicalTx '($16 $18) '($19) '('($10 $20)) '('('"type" '"data"))))
+(return (KqpPhysicalQuery '($6 $21) '((KqpTxResultBinding (ListType (StructType '('"id" $1) '('"title" (OptionalType (DataType 'Utf8))))) '1 '0)) '('('"type" '"data_query"))))
+)

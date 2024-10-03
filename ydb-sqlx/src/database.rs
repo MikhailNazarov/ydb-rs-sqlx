@@ -50,13 +50,9 @@ impl HasArguments<'_> for Ydb {
 
     type Arguments = YdbArguments;
 
-    type ArgumentBuffer = YdbArgumentBuffer;
-}
+    type ArgumentBuffer<'q> = YdbArgumentBuffer;
 
-impl<'q> HasStatement<'q> for Ydb {
-    type Database = Ydb;
-
-    type Statement = YdbStatement<'q>;
+    type Statement<'q> = YdbStatement<'q>;
 }
 
 impl HasStatementCache for Ydb {}

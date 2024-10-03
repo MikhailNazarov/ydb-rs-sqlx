@@ -28,6 +28,7 @@ impl YdbRow {
                     index: column.name().to_owned(),
                     source: Box::new(e),
                 })?;
+
             values.push(YdbValue::new(value, column.type_info().clone()));
         }
 
