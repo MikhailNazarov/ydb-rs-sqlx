@@ -5,10 +5,14 @@ use tracing::{info, Level};
 use tracing_log::log::LevelFilter;
 use ydb_sqlx::{connection::YdbConnectOptions, YdbPoolOptions};
 
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
    
+    ydb_sqlx::any::install_driver();
+   
+    
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
     let options = YdbConnectOptions::from_str(&connection_string)?

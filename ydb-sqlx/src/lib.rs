@@ -51,3 +51,5 @@ impl YdbPoolExt for YdbPool {
         YdbSchemaExecutor::from_pool(self.clone())
     }
 }
+
+sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);
