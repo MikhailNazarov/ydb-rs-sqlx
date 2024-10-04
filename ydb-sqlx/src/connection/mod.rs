@@ -125,6 +125,22 @@ impl From<&StatsMode> for ydb::QueryStatsMode {
 
 impl YdbConnectOptions{
 
+    pub fn from_env() -> Result<Self, sqlx_core::Error> {
+
+        let ydb_conn_str = std::env::var("YDB_CONNECTION_STRING").ok();
+
+        if let Some(ydb_conn_str) = ydb_conn_str {
+            return Self::from_url(&url::Url::parse(&ydb_conn_str)
+            .map_err(|e| sqlx_core::Error::Configuration(e.into()))?);
+        }
+
+        let db_url = std::env::var("DATABASE_URL").map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+
+        
+        Self::from_url(&url::Url::parse(&db_url)
+            .map_err(|e| sqlx_core::Error::Configuration(e.into()))?)
+    }
+
     pub fn  log_statements(mut self, level: tracing::log::LevelFilter) -> Self {
         self.log_settings.log_statements(level);
         self
@@ -147,6 +163,7 @@ impl YdbConnectOptions{
 
 impl ConnectOptions for YdbConnectOptions {
     type Connection = YdbConnection;
+
 
     fn from_url(url: &url::Url) -> Result<Self, sqlx_core::Error> {
         Self::from_str(url.as_str())

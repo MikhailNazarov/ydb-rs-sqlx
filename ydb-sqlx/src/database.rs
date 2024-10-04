@@ -1,6 +1,6 @@
-use sqlx_core::database::{Database, HasStatementCache};
+use sqlx_core::{connection::ConnectOptions, database::{Database, HasStatementCache}};
 
-use crate::value::YdbValueRef;
+use crate::{connection::YdbConnectOptions, value::YdbValueRef, YdbPool, YdbPoolOptions};
 
 use super::{
     arguments::{YdbArgumentBuffer, YdbArguments},
@@ -46,3 +46,36 @@ impl Database for Ydb {
 }
 
 impl HasStatementCache for Ydb {}
+
+impl Ydb {
+    pub async fn connect_env() -> Result<YdbPool, sqlx_core::Error> {
+        let options = YdbConnectOptions::from_env()?;
+        let pool = YdbPoolOptions::new().connect_with(options).await?;
+        Ok(pool)
+    }
+
+    pub async fn connect_env_opts(opts: impl Fn(YdbConnectOptions)->YdbConnectOptions) -> Result<YdbPool, sqlx_core::Error> {
+        let options = YdbConnectOptions::from_env()?;
+        let options = opts(options);
+        let pool = YdbPoolOptions::new().connect_with(options).await?;
+        Ok(pool)
+    }
+   
+
+    pub async fn connect(db_url: &str)->Result<YdbPool,sqlx_core::Error>{
+        let url = url::Url::parse(&db_url)
+            .map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+        let options = YdbConnectOptions::from_url(&url)?;
+        let pool = YdbPoolOptions::new().connect_with(options).await?;
+        Ok(pool)
+    }
+
+    pub async fn connect_opts(db_url: &str, opts: impl Fn(YdbConnectOptions)->YdbConnectOptions)->Result<YdbPool,sqlx_core::Error>{
+        let url = url::Url::parse(&db_url)
+            .map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
+        let options = YdbConnectOptions::from_url(&url)?;
+        let options = opts(options);
+        let pool = YdbPoolOptions::new().connect_with(options).await?;
+        Ok(pool)
+    }
+}

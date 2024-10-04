@@ -8,9 +8,8 @@ This crate provides Sqlx integration for [ydb-rs-sdk](https://github.com/ydb-pla
 ```rust 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let connection_string = env::var("YDB_CONNECTION_STRING")?;
 
-    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
+    let pool = Ydb::connect_env().await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
@@ -30,10 +29,9 @@ struct UserInfo {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let connection_string = env::var("YDB_CONNECTION_STRING")?;
-    let pool = YdbPoolOptions::new().connect(&connection_string).await?;
+    let pool = Ydb::connect_env().await?;
 
-     let users: Vec<UserInfo> =
+    let users: Vec<UserInfo> =
         sqlx::query_as("SELECT * FROM test2 WHERE age >= $min_age AND age <= $max_age")
             .bind(("min_age", 30))
             .bind(("max_age", 40))

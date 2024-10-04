@@ -1,21 +1,17 @@
-use std::{env, str::FromStr};
+use tracing::info;
+use tracing_log::log::LevelFilter;
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use ydb_sqlx::database::Ydb;
 
-use tracing::{info, Level};
-
-use ydb_sqlx::{connection::YdbConnectOptions, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     init_logs();
-    let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
-    let options = YdbConnectOptions::from_str(&connection_string)?
-        ;
-        //.log_statements(LevelFilter::Info); 
-    
+    let pool = Ydb::connect_env_opts(
+        |opt|opt.log_statements(LevelFilter::Info)
+    ).await?;
 
-    let pool = YdbPoolOptions::new()        
-        .connect_with(options).await?;
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
     assert_eq!(row.0, 2);
 
@@ -68,10 +64,8 @@ struct UserInfo {
 }
 
 fn init_logs() {
-    let level = env::var("RUST_LOG").unwrap_or("INFO".to_string());
-    let log_level = Level::from_str(&level).unwrap();
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_max_level(log_level)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("Error setting subscriber");
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
 }
