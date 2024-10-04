@@ -9,10 +9,12 @@ This crate provides Sqlx integration for [ydb-rs-sdk](https://github.com/ydb-pla
 You could use `DATABASE_URL` or `YDB_CONNECTION_STRING` environment variable to connect to ydb server.
 
 ```.env
+# .env file
 YDB_CONNECTION_STRING=grpc://localhost:2136?database=/local
 ```
 
 ```.env
+# .env file
 DATABASE_URL=grpcs://ydb.serverless.yandexcloud.net:2135/?database=/ru-central1/xxxxxxxxxxxxxxx/yyyyyyyyyy&connection_timeout=5&sa-key=./key.json
 
 ```
