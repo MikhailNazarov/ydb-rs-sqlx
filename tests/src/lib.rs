@@ -1,3 +1,5 @@
+pub mod connect;
+
 #[cfg(test)]
 mod tests{
     pub use std::env;

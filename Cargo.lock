@@ -2548,6 +2548,8 @@ version = "0.1.0"
 dependencies = [
  "sqlx",
  "tokio",
+ "tracing",
+ "tracing-log",
  "ydb-sqlx",
 ]
 
