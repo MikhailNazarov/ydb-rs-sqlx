@@ -45,16 +45,15 @@ impl From<ParsedQuery> for ydb::Query {
     }
 }
 
-pub(crate) fn build_query<'q, E: 'q>(mut query: E) -> Result<ParsedQuery, Error>
-where
-    E: Execute<'q, Ydb>,
-{
+pub(crate) fn build_query<'q, E: 'q + Execute<'q, Ydb>>(
+    mut query: E,
+) -> Result<ParsedQuery, Error> {
     let mut sb = StringBuilder::new();
     let mut params = HashMap::new();
 
     if let Some(arguments) = query
         .take_arguments()
-        .map_err(|e| sqlx_core::error::Error::AnyDriverError(e))?
+        .map_err(sqlx_core::error::Error::AnyDriverError)?
     {
         for arg in arguments.into_iter() {
             arg.declare(&mut sb);

@@ -26,7 +26,7 @@ impl TransactionManager for YdbTransactionManager {
     
         Box::pin(async move{
             if let Some(tr) = &mut conn.transaction{
-                tr.commit().await.map_err(|e| err_ydb_to_sqlx(e))?;
+                tr.commit().await.map_err(err_ydb_to_sqlx)?;
                 conn.transaction = None;
                 return Ok(());
             }
@@ -39,7 +39,7 @@ impl TransactionManager for YdbTransactionManager {
     ) -> futures_util::future::BoxFuture<'_, Result<(), sqlx_core::Error>> {
         Box::pin(async move{
             if let Some(tr) = &mut conn.transaction{
-                tr.rollback().await.map_err(|e| err_ydb_to_sqlx(e))?;
+                tr.rollback().await.map_err(err_ydb_to_sqlx)?;
                 conn.transaction = None;
                 return Ok(());
             }
@@ -50,7 +50,7 @@ impl TransactionManager for YdbTransactionManager {
     fn start_rollback(conn: &mut YdbConnection) {
         let _ = Box::pin(async move{
             if let Some(tr) = &mut conn.transaction{
-                let _ = tr.rollback().await.map_err(|e| err_ydb_to_sqlx(e)).map_err(|e|{
+                let _ = tr.rollback().await.map_err(err_ydb_to_sqlx).map_err(|e|{
                     error!("{}",e);
                 });
                 conn.transaction = None;

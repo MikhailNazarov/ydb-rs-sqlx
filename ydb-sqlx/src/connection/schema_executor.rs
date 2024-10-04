@@ -7,7 +7,7 @@ use crate::typeinfo::YdbTypeInfo;
 use futures::future::BoxFuture;
 use sqlx_core::connection::LogSettings;
 use sqlx_core::describe::Describe;
-use sqlx_core::executor::Executor;
+use sqlx_core::executor::{Execute, Executor};
 use sqlx_core::logger::QueryLogger;
 use sqlx_core::Error;
 use ydb::TableClient;
@@ -51,24 +51,22 @@ impl Debug for YdbSchemaExecutor{
 impl<'c> Executor<'c> for YdbSchemaExecutor {
     type Database = Ydb;
 
-    fn execute<'e, 'q: 'e, E: 'q>(self, query: E) -> BoxFuture<'e, Result<YdbQueryResult, Error>>
+    fn execute<'e, 'q: 'e, E: 'q + Execute<'q, Ydb>>(self, query: E) -> BoxFuture<'e, Result<YdbQueryResult, Error>>
     where
-        'c: 'e,
-        E: sqlx_core::executor::Execute<'q, Ydb>,
-    {
+        'c: 'e{
         
         Box::pin(async move{
             let _logger = QueryLogger::new(query.sql(), self.log_settings.clone());
             match self.inner {
                 YdbSchemaExecutorInner::Client(table_client) => {
                     table_client.retry_execute_scheme_query(query.sql()).await
-                        .map_err(|e| err_ydb_to_sqlx(e))?;
+                        .map_err(err_ydb_to_sqlx)?;
                     }
                 YdbSchemaExecutorInner::Pool(pool) => {
                     pool.acquire().await?
                         .table_client()
                         .retry_execute_scheme_query(query.sql()).await
-                        .map_err(|e| err_ydb_to_sqlx(e))?;
+                        .map_err( err_ydb_to_sqlx)?;
                 }
             }
              
@@ -78,7 +76,7 @@ impl<'c> Executor<'c> for YdbSchemaExecutor {
 
     }
 
-    fn fetch_many<'e, 'q: 'e, E: 'q>(
+    fn fetch_many<'e, 'q: 'e, E: 'q + Execute<'q, Ydb>>(
         self,
         _query: E,
     ) -> futures::prelude::stream::BoxStream<
@@ -86,19 +84,17 @@ impl<'c> Executor<'c> for YdbSchemaExecutor {
         Result<itertools::Either<YdbQueryResult, YdbRow>, Error>,
     >
     where
-        'c: 'e,
-        E: sqlx_core::executor::Execute<'q, Ydb>,
+        'c: 'e
     {
         unimplemented!()
     }
 
-    fn fetch_optional<'e, 'q: 'e, E: 'q>(
+    fn fetch_optional<'e, 'q: 'e, E: 'q + Execute<'q, Ydb>>(
         self,
         _query: E,
     ) -> futures::prelude::future::BoxFuture<'e, Result<Option<YdbRow>, Error>>
     where
-        'c: 'e,
-        E: sqlx_core::executor::Execute<'q, Ydb>,
+        'c: 'e
     {
         unimplemented!()
     }

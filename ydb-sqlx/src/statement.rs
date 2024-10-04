@@ -53,6 +53,6 @@ impl ColumnIndex<YdbStatement<'_>> for &'_ str {
             .column_names
             .get(*self)
             .ok_or_else(|| Error::ColumnNotFound((*self).into()))
-            .map(|v| *v)
+            .copied()
     }
 }

@@ -41,7 +41,7 @@ impl YdbConnection {
                     mode => { query.with_stats(mode.into()) }
                 };
 
-                let result = tr.query(query).await.map_err(|e| err_ydb_to_sqlx(e))?;
+                let result = tr.query(query).await.map_err(err_ydb_to_sqlx)?;
                 if let Some(stats) = result.stats(){
                     info!("{:?}", stats);
                 }
@@ -84,7 +84,7 @@ impl YdbConnection {
                         Ok(Some(result.into_results()))
                     })
                     .await
-                    .map_err(|e| err_ydb_or_customer_to_sqlx(e))
+                    .map_err( err_ydb_or_customer_to_sqlx)
             }
         });
         let stream = futures::stream::once(result)
@@ -101,8 +101,7 @@ impl YdbConnection {
 
                 let rows = results
                     .into_iter()
-                    .map(|rs| rs.rows().into_iter())
-                    .flatten()
+                    .flat_map(|rs| rs.rows())
                     .map(|r| match YdbRow::from(r) {
                         Ok(r) => Ok(Either::Right(r)),
                         Err(e) => Err(e),
@@ -123,13 +122,12 @@ impl YdbConnection {
 impl<'c> Executor<'c> for &'c mut YdbConnection {
     type Database = Ydb;
 
-    fn fetch_many<'e, 'q: 'e, E: 'q>(
+    fn fetch_many<'e, 'q: 'e, E: 'q + Execute<'q, Ydb>>(
         self,
         query: E,
     ) -> BoxStream<'e, Result<sqlx_core::Either<YdbQueryResult, YdbRow>, Error>>
     where
-        'c: 'e,
-        E: Execute<'q, Ydb>,
+        'c: 'e
     {
 
         Box::pin(try_stream! {
@@ -144,13 +142,12 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
         })
     }
 
-    fn fetch_optional<'e, 'q: 'e, E: 'q>(
+    fn fetch_optional<'e, 'q: 'e, E: 'q + Execute<'q, Ydb>>(
         self,
         query: E,
     ) -> futures::future::BoxFuture<'e, Result<Option<YdbRow>, Error>>
     where
-        'c: 'e,
-        E: Execute<'q, Ydb>,
+        'c: 'e
     {
         
         Box::pin(async move {
@@ -183,12 +180,13 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     {
         Box::pin(async move {
             let res = self.client.table_client().prepare_data_query(sql.to_owned()).await
-            .map_err(|e| err_ydb_to_sqlx(e))?;
+            .map_err(err_ydb_to_sqlx)?;
             println!("prepare_result: {:?}", res);
-            Ok(YdbStatement {
-                sql: todo!(),
-                metadata: todo!(),
-            })
+            todo!()
+            // Ok(YdbStatement {
+            //     sql: todo!(),
+            //     metadata: todo!(),
+            // })
         })
     }
 
@@ -201,14 +199,15 @@ impl<'c> Executor<'c> for &'c mut YdbConnection {
     {
         Box::pin( async move {
             let explain_result = self.client.table_client().explain_data_query(sql.to_owned()).await
-            .map_err(|e| err_ydb_to_sqlx(e))?;
+            .map_err(err_ydb_to_sqlx)?;
             println!("explain_result: {:?}", explain_result);
 
-            Ok(Describe::<Ydb>{
-                columns: vec![],
-                parameters: todo!(),
-                nullable: todo!(),   
-            })
+            todo!()
+            // Ok(Describe::<Ydb>{
+            //     columns: vec![],
+            //     parameters: todo!(),
+            //     nullable: todo!(),   
+            // })
         })
        
         //self.client.table_client().explain_data_query()

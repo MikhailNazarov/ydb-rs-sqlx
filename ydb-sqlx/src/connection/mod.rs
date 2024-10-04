@@ -159,7 +159,7 @@ impl ConnectOptions for YdbConnectOptions {
         Self::Connection: Sized,
     {
         Box::pin(async move {
-            let connection = YdbConnection::establish(&self).await?;
+            let connection = YdbConnection::establish(self).await?;
             Ok(connection)
         })
     }
@@ -183,8 +183,10 @@ impl FromStr for YdbConnectOptions {
     type Err = sqlx_core::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut options = Self::default();
-        options.connection_timeout = Duration::from_secs(2);
+        let mut options = YdbConnectOptions{
+            connection_timeout : Duration::from_secs(2),
+            ..Default::default()
+        };
         
         let url = sqlx_core::url::Url::parse(s)
             .map_err(|e| sqlx_core::Error::Configuration(e.into()))?;
@@ -217,13 +219,13 @@ impl FromStr for YdbConnectOptions {
                     options.credentials = Some(Arc::new(Box::new(cred)));
                 },
                 "database" =>{
-                    database = Some(v.to_owned());
+                    database = Some(v.into_owned());
                 },
                 "user" =>{
-                    user = Some(v.to_owned());
+                    user = Some(v.into_owned());
                 },
                 "password"=>{
-                    password = Some(v.to_owned());
+                    password = Some(v.into_owned());
                 },
                 _ => continue
             }

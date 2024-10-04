@@ -2,15 +2,16 @@ use std::{env, str::FromStr};
 
 use tracing::{info, Level};
 
-use tracing_log::log::LevelFilter;
 use ydb_sqlx::{connection::YdbConnectOptions, YdbPoolOptions};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv().ok();
     init_logs();
     let connection_string = env::var("YDB_CONNECTION_STRING").unwrap_or_else(|_| "grpc://localhost:2136?database=/local".to_string());
     
     let options = YdbConnectOptions::from_str(&connection_string)?
-        .log_statements(LevelFilter::Info); 
+        ;
+        //.log_statements(LevelFilter::Info); 
     
 
     let pool = YdbPoolOptions::new()        
@@ -51,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .fetch_all(&pool)
             .await?;
 
-    assert!(users.len() > 0);
+    assert!(!users.is_empty());
     info!("users found: {}", users.len());
 
     Ok(())

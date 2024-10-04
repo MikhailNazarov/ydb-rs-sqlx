@@ -17,7 +17,7 @@ impl YdbRow {
         let columns = row
             .columns()
             .into_iter()
-            .map(|c| YdbColumn::new(c))
+            .map(YdbColumn::new)
             .collect::<Vec<_>>();
 
         let mut values = vec![];

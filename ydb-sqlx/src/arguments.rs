@@ -140,7 +140,7 @@ impl Argument {
 
 impl YdbArgumentBuffer {
     pub(crate) fn push(&mut self, value: ydb::Value, type_info: YdbTypeInfo) {
-        self.index = self.index + 1;
+        self.index += 1;
         self.arguments.push(Argument::new(
             format!("$arg_{}", self.index),
             value,
