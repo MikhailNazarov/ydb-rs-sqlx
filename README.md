@@ -4,6 +4,41 @@ This crate provides Sqlx integration for [ydb-rs-sdk](https://github.com/ydb-pla
 
 ## Basic examples
 
+### Connection from .env
+
+You could use `DATABASE_URL` or `YDB_CONNECTION_STRING` environment variable to connect to ydb server.
+
+```.env
+YDB_CONNECTION_STRING=grpc://localhost:2136?database=/local
+```
+
+```.env
+DATABASE_URL=grpcs://ydb.serverless.yandexcloud.net:2135/?database=/ru-central1/xxxxxxxxxxxxxxx/yyyyyyyyyy&connection_timeout=5&sa-key=./key.json
+
+```
+
+```rust
+let pool = Ydb::connect_env().await?;
+```
+
+### Connection options
+
+```rust
+let pool = Ydb::connect_env_opts(|opt|opt.log_statements(LevelFilter::Info)).await?;
+```
+
+### Connection from url
+
+```rust
+let pool = Ydb::connect("grpc://localhost:2136?database=/local").await?;
+```
+
+or
+
+```rust
+let pool = Ydb::connect_opts("grpc://localhost:2136?database=/local", |opt|opt.log_statements(LevelFilter::Info)).await?;
+```
+
 ### Simple select
 ```rust 
 #[tokio::main]
