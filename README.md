@@ -117,7 +117,7 @@ SELECT * FROM test2 WHERE age > $age;
 
 ```
 
-The library is do it for you. You specify only query and bind params to it with `bind` function.
+The library do it for you. You specify only query and bind params to it with `bind` function.
 
 ## Checklist
 
@@ -154,7 +154,7 @@ The library is do it for you. You specify only query and bind params to it with 
         - [x] Interval
     - [x] Optional
 - [ ] Prepared statements
-- [ ] Transactions
+- [x] Transactions
 - [ ] Compile-type checked queries
-- [ ] Migrations
-- [ ] Log Statements
+- [x] Migrations
+- [x] Log Statements
