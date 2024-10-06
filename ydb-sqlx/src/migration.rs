@@ -166,15 +166,15 @@ impl Migrate for YdbConnection {
 
 
 impl MigrateDatabase for Ydb{
-    fn create_database(_url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
+    fn create_database(url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
         todo!()
     }
 
-    fn database_exists(_url: &str) -> BoxFuture<'_, Result<bool, sqlx_core::Error>> {
+    fn database_exists(url: &str) -> BoxFuture<'_, Result<bool, sqlx_core::Error>> {
         todo!()
     }
 
-    fn drop_database(_url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
+    fn drop_database(url: &str) -> BoxFuture<'_, Result<(), sqlx_core::Error>> {
         todo!()
     }
 }

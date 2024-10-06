@@ -11,6 +11,7 @@ use sqlx_core::{
 };
 use statement::YdbStatement;
 
+pub mod any;
 pub mod arguments;
 pub mod column;
 pub mod connection;
@@ -50,3 +51,5 @@ impl YdbPoolExt for YdbPool {
         YdbSchemaExecutor::from_pool(self.clone())
     }
 }
+
+sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);

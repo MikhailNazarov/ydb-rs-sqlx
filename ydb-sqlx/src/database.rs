@@ -1,4 +1,7 @@
-use sqlx_core::{connection::ConnectOptions, database::{Database, HasStatementCache}};
+use sqlx_core::{
+    database::{Database, HasStatementCache},
+    migrate::MigrateDatabase,
+};
 
 use crate::{connection::YdbConnectOptions, value::YdbValueRef, YdbPool, YdbPoolOptions};
 
@@ -13,7 +16,6 @@ use super::{
     typeinfo::YdbTypeInfo,
     value::YdbValue,
 };
-
 #[derive(Debug)]
 pub struct Ydb {}
 

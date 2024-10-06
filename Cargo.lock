@@ -762,6 +762,7 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "sqlx",
+ "sqlx-core",
  "tokio",
  "tracing",
  "tracing-log",
