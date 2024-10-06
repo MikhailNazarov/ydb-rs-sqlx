@@ -10,7 +10,7 @@ use sqlx_core::{
     impl_encode_for_option, impl_into_arguments_for_arguments,
 };
 use statement::YdbStatement;
-
+#[cfg(feature = "any")]
 pub mod any;
 pub mod arguments;
 pub mod column;
@@ -52,4 +52,4 @@ impl YdbPoolExt for YdbPool {
     }
 }
 
-sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);
+//sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);

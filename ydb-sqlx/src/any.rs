@@ -1,9 +1,7 @@
-
-
-use std::sync::Once;
+use std::sync::{Arc, Once};
 use driver::install_drivers;
-use sqlx_core::describe::Describe;
-use futures::{future::BoxFuture, stream::BoxStream};
+use sqlx_core::{describe::Describe, row::Row, try_stream};
+use futures::{future::{self, BoxFuture}, pin_mut, stream::{self, BoxStream}, StreamExt, TryStreamExt};
 use itertools::Either;
 use sqlx_core::{
     any::{self, *}, connection::{ConnectOptions, Connection}, database::Database, executor::Executor, ext::ustr::UStr, Error, Result
@@ -12,7 +10,7 @@ use sqlx_core::{
 sqlx_core::declare_driver_with_optional_migrate!(DRIVER = Ydb);
 
 use crate::{
-    column::YdbColumn, connection::{YdbConnectOptions, YdbConnection}, database::Ydb, query::YdbQueryResult, row::YdbRow, transaction::YdbTransactionManager, typeinfo::{DataType, YdbTypeInfo}
+    arguments::YdbArguments, column::YdbColumn, connection::{YdbConnectOptions, YdbConnection}, database::Ydb, query::{build_query_from_parts, YdbQueryResult}, row::YdbRow, transaction::YdbTransactionManager, typeinfo::{DataType, YdbTypeInfo}
 };
 use sqlx_core::transaction::TransactionManager;
 
@@ -67,53 +65,65 @@ impl AnyConnectionBackend for YdbConnection {
         Ok(self)
     }
 
-    
-
-    
-
     fn fetch_many<'q>(
         &'q mut self,
         query: &'q str,
-        persistent: bool,
+        _persistent: bool,
         arguments: Option<AnyArguments<'q>>,
     ) -> BoxStream<'q, Result<Either<AnyQueryResult, AnyRow>,sqlx_core::Error>>
     {
-        // let persistent = arguments.is_some();
-        // let args = arguments.as_ref().map(AnyArguments::convert_to);
-        todo!()
-        //Box::pin(
-            
-            // self.run(query, args, 0, persistent, None)
-            //     .try_flatten_stream()
-            //     .map(
-            //         move |res: sqlx_core::Result<Either<YdbQueryResult, YdbRow>>| match res? {
-            //             Either::Left(result) => Ok(Either::Left(map_result(result))),
-            //             Either::Right(row) => Ok(Either::Right(AnyRow::try_from(&row)?)),
-            //         },
-            //     ),
-        //)
+        let arguments: Option<YdbArguments> = match arguments.as_ref().map(AnyArguments::convert_to).transpose() {
+            Ok(arguments) => arguments,
+            Err(error) => {
+                return stream::once(future::ready(Err(sqlx_core::Error::Encode(error)))).boxed()
+            }
+        };
+
+
+        Box::pin(try_stream! {
+            let query = build_query_from_parts(query, arguments)?;
+            let s = self.run(query).await?;
+            pin_mut!(s);
+
+            while let Some(v) = s.try_next().await? {
+                
+                match v{
+                    Either::Left(result) => {
+                        r#yield!(Either::Left(map_result(result)));
+                    },
+                    Either::Right(row) => {
+                        r#yield!(Either::Right(AnyRow::try_from(&row)?));
+                    }
+                }
+            }
+            Ok(())
+        })
     }
 
     fn fetch_optional<'q>(
         &'q mut self,
         query: &'q str,
-        persistent: bool,
+        _persistent: bool,
         arguments: Option<AnyArguments<'q>>,
     ) -> BoxFuture<'q, Result<Option<AnyRow>, sqlx_core::Error>>{
-        //let persistent = arguments.is_some();
-        //let args = arguments.as_ref().map(AnyArguments::convert_to);
+        
+        let arguments = arguments
+            .as_ref()
+            .map(AnyArguments::convert_to)
+            .transpose()
+            .map_err(sqlx_core::Error::Encode);
 
         Box::pin(async move {
-            todo!();
-           
-            // let stream = self.run(query, args, 1, persistent, None).await?;
-            // futures_util::pin_mut!(stream);
+            let arguments = arguments?;
+            let query = build_query_from_parts(query, arguments)?;
+            let stream = self.run(query).await?;
+            futures_util::pin_mut!(stream);
 
-            // if let Some(Either::Right(row)) = stream.try_next().await? {
-            //     return Ok(Some(AnyRow::try_from(&row)?));
-            // }
+            if let Some(Either::Right(row)) = stream.try_next().await? {
+                return Ok(Some(AnyRow::try_from(&row)?));
+            }
 
-            //Ok(None)
+            Ok(None)
         })
     }
 
@@ -188,7 +198,7 @@ impl<'a> TryFrom<&'a YdbTypeInfo> for AnyTypeInfo {
                 DataType::Int64 | DataType::Uint64 => AnyTypeInfoKind::BigInt,
                 DataType::Float => AnyTypeInfoKind::Real,
                 DataType::Double => AnyTypeInfoKind::Double,
-                DataType::String => AnyTypeInfoKind::Blob,      
+                DataType::Bytes => AnyTypeInfoKind::Blob,      
                 DataType::Text | DataType::Json => AnyTypeInfoKind::Text,
                 _ => {
                     return Err(Error::AnyDriverError(
@@ -220,13 +230,13 @@ impl<'a> TryFrom<&'a YdbColumn> for AnyColumn {
 impl<'a> TryFrom<&'a YdbRow> for AnyRow {
     type Error = Error;
 
-    fn try_from(_row: &'a YdbRow) -> Result<Self, Self::Error> {
-        // let columns = Arc::new(row.columns().iter()
-        // .map(|c| (UStr::new(&c.name), c.ordinal)).collect());
-        // AnyRow::map_from(row, 
-        //     columns
-        // )
-        todo!()
+    fn try_from(row: &'a YdbRow) -> Result<Self, Self::Error> {
+        let columns = Arc::new(row.columns().iter()
+        .map(|c| (UStr::new(&c.name), c.ordinal)).collect());
+        AnyRow::map_from::<YdbRow>(
+            row, 
+            columns
+        )
     }
 }
 

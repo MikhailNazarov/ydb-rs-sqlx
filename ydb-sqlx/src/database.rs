@@ -1,6 +1,5 @@
 use sqlx_core::{
-    database::{Database, HasStatementCache},
-    migrate::MigrateDatabase,
+    connection::ConnectOptions, database::{Database, HasStatementCache}
 };
 
 use crate::{connection::YdbConnectOptions, value::YdbValueRef, YdbPool, YdbPoolOptions};

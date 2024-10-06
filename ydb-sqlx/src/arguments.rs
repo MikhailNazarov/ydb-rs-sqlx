@@ -80,6 +80,10 @@ impl YdbArguments {
     pub(crate) fn into_iter(self) -> impl Iterator<Item = Argument> {
         self.buffer.arguments.into_iter()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.arguments.is_empty()
+    }
 }
 
 #[allow(unused)]

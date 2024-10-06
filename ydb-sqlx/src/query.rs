@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rustring_builder::StringBuilder;
 use sqlx_core::{executor::Execute, Error};
 
-use crate::database::Ydb;
+use crate::{arguments::YdbArguments, database::Ydb};
 
 #[derive(Default)]
 pub struct YdbQueryResult {
@@ -48,21 +48,31 @@ impl From<ParsedQuery> for ydb::Query {
 pub(crate) fn build_query<'q, E: 'q + Execute<'q, Ydb>>(
     mut query: E,
 ) -> Result<ParsedQuery, Error> {
+    let arguments = query
+        .take_arguments()
+        .map_err(sqlx_core::error::Error::AnyDriverError)?;
+
+    build_query_from_parts(query.sql(), arguments)
+}
+
+pub(crate) fn build_query_from_parts(
+    sql: &str,
+    arguments: Option<YdbArguments>,
+) -> Result<ParsedQuery, Error> {
     let mut sb = StringBuilder::new();
     let mut params = HashMap::new();
 
-    if let Some(arguments) = query
-        .take_arguments()
-        .map_err(sqlx_core::error::Error::AnyDriverError)?
-    {
-        for arg in arguments.into_iter() {
-            arg.declare(&mut sb);
-            arg.add_to_params(&mut params);
+    if let Some(arguments) = arguments {
+        if !arguments.is_empty() {
+            for arg in arguments.into_iter() {
+                arg.declare(&mut sb);
+                arg.add_to_params(&mut params);
+            }
+            sb.append_line("");
         }
-        sb.append_line("");
     }
 
-    sb.append(query.sql());
+    sb.append(sql);
 
     let sql = sb.to_string();
 

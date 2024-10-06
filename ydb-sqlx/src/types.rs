@@ -15,7 +15,7 @@ use crate::{
     arguments::{NamedArgument, YdbArgumentBuffer},
     database::Ydb,
     typeinfo::{DataType, YdbTypeInfo},
-    value::YdbValueRef,
+    value::{YdbValue, YdbValueRef},
 };
 
 macro_rules! ydb_type {
@@ -93,7 +93,6 @@ macro_rules! ydb_type_with_optional {
         }
     };
 }
-
 ydb_type_with_optional!(bool, DataType::Bool);
 ydb_type_with_optional!(i8, DataType::Int8);
 ydb_type_with_optional!(u8, DataType::Uint8);
@@ -150,7 +149,7 @@ ydb_type!(JsonDocument, DataType::JsonDocument);
 
 ydb_type_with_optional!(
     Bytes,
-    DataType::String,
+    DataType::Bytes,
     DataType::Yson,
     DataType::Text,
     DataType::Json,
@@ -197,6 +196,39 @@ where
             T::type_info(),
         );
         Ok(IsNull::No)
+    }
+}
+
+impl Type<Ydb> for Vec<u8> {
+    fn type_info() -> YdbTypeInfo {
+        YdbTypeInfo(DataType::Bytes)
+    }
+}
+
+impl Encode<'_, Ydb> for Vec<u8> {
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
+        let bytes = ydb::Bytes::from(self.clone());
+        bytes.encode(buf)
+    }
+}
+
+impl Decode<'_, Ydb> for Vec<u8> {
+    fn decode(value: YdbValueRef<'_>) -> Result<Self, BoxDynError> {
+        let value: ydb::Value = value.deref().clone();
+        value.try_into().map_err(|e: YdbError| e.into())
+    }
+}
+
+impl Type<Ydb> for &[u8] {
+    fn type_info() -> YdbTypeInfo {
+        YdbTypeInfo(DataType::Bytes)
+    }
+}
+
+impl Encode<'_, Ydb> for &[u8] {
+    fn encode_by_ref(&self, buf: &mut YdbArgumentBuffer) -> Result<IsNull, BoxDynError> {
+        let bytes = ydb::Bytes::from(Vec::from(*self)); //todo: fix in ydb
+        bytes.encode(buf)
     }
 }
 
