@@ -3860,7 +3860,6 @@ dependencies = [
  "sqlx",
  "sqlx-cli",
  "tokio",
- "tracing",
  "tracing-subscriber",
  "ydb-sqlx",
 ]
