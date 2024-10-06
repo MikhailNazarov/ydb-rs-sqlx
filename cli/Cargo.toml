@@ -1,12 +1,15 @@
 [package]
-name = "sqlx-ydb-migrate"
+name = "ydb-sqlx-cli"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 tracing = "0.1"
 ydb-sqlx = { path = "../ydb-sqlx" }
+sqlx-cli = { version = "0.8" }
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls"] }
 tokio = { version = "1.22", features = ["full"] }
 tracing-subscriber = "0.3"
-dotenv = "0.15"
+dotenvy = "0.15"
+console = "0.15"
+clap = { version = "4.5", features = ["derive"] }

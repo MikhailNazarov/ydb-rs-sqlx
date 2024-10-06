@@ -1,20 +1,14 @@
-use std::env;
-use sqlx::{migrate::Migrator, Connection};
-use ydb_sqlx::connection::YdbConnection;
-
+use clap::Parser;
+use console::style;
+use sqlx_cli::Opt;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv::dotenv().ok();
-    // install global collector configured based on RUST_LOG env var.
-    tracing_subscriber::fmt::init();
-    let connection_string = env::var("YDB_CONNECTION_STRING")
-        .expect("YDB_CONNECTION_STRING must be set");
+async fn main() {
+    dotenvy::dotenv().ok();
     
-    let mut conn = YdbConnection::connect(&connection_string).await?;
-   
-    let path = std::path::Path::new("./migrations");
-    let migrator = Migrator::new(path).await?;
-    migrator.run_direct(&mut conn).await?;
-    Ok(())
+    // no special handling here
+    if let Err(error) = sqlx_cli::run(Opt::parse()).await {
+        println!("{} {}", style("error:").bold().red(), error);
+        std::process::exit(1);
+    }
 }
