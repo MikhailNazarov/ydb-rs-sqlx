@@ -105,7 +105,7 @@ pub async fn test_opt(){
     {
     let row = sqlx::query_as::<_,(i32, Option<String>)>(r#"
         select * from test_opt where id = $id
-    "#).bind(with_name("id", 1))
+    "#).bind(("id", 1))
     .fetch_one(&mut *conn).await.unwrap();
     
     assert_eq!(row.1, Some("title1".to_string()));
