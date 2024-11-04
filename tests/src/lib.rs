@@ -17,6 +17,31 @@ pub async fn connect_local() -> sqlx::Result<YdbPool> {
     ).await?;
     Ok(pool)
 }
+#[tokio::test]
+pub async fn test_optional_datetime(){
+
+    let pool = connect_local().await.unwrap();
+
+    let mut tr = pool.begin().await.unwrap();
+    let conn = tr.acquire().await.unwrap();
+   
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS test_opt_dt(
+            id Int32 NOT NULL,
+            expires_at DateTime,
+            PRIMARY KEY (id)
+        )
+    "#).execute(conn.schema()).await.unwrap();
+
+
+    sqlx::query(r#"
+        insert into test_opt_dt(id, expires_at) values
+        (1, CurrentUtcDate()),
+        (2, CurrentUtcDate()),
+        (3, CurrentUtcDate()),
+        (4, NULL)
+    "#).execute(&mut *conn).await.unwrap();
+}
 
 
 #[tokio::test]
