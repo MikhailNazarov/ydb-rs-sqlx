@@ -248,6 +248,9 @@ impl FromStr for YdbConnectOptions {
             }
         }
         let database = database.unwrap_or("/".into()).to_string();
+
+        
+
         
         let endpoint = format!("{}://{}:{}?database={}",url.scheme(),url.host().unwrap(),url.port().unwrap(),database);
         if let (Some(user), Some(password)) = (user, password) {
@@ -256,6 +259,9 @@ impl FromStr for YdbConnectOptions {
             let user = user.to_string();
             let cred = StaticCredentials::new(user, password, uri, database);
             options.credentials = Some(Arc::new(Box::new(cred)));
+        }
+        if options.credentials.is_none() {
+            options.credentials = Some(Arc::new(Box::new(AnonymousCredentials::new())));
         }
         options.connection_string = endpoint;
         Ok(options)

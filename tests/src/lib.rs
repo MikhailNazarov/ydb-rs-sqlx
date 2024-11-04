@@ -2,20 +2,28 @@
 
 pub mod connect;
 
-#[cfg(test)]
-pub mod tests{
-    pub use ydb_sqlx::database::Ydb;
-    pub use sqlx::Acquire;
-    pub use ydb_sqlx::with_name;
-    pub use sqlx::pool;
+
+use tokio::net::lookup_host;
+use ydb_sqlx::database::Ydb;
+use sqlx::Acquire;
+use ydb_sqlx::with_name;
+use sqlx::pool;
+use ydb_sqlx::YdbPool;
+
+pub async fn connect_local() -> sqlx::Result<YdbPool> {
+    let pool = ydb_sqlx::database::Ydb::connect_opts(
+        "grpc://localhost:2136?database=/local",
+        |opts|opts.log_statements(tracing_log::log::LevelFilter::Info)
+    ).await?;
+    Ok(pool)
 }
+
 
 #[tokio::test]
 pub async fn test_optional_string(){
    
 
-    use tests::*;
-    let pool = Ydb::connect_env().await.unwrap();
+    let pool = connect_local().await.unwrap();
 
     let mut tr = pool.begin().await.unwrap();
     let conn = tr.acquire().await.unwrap();
@@ -43,11 +51,12 @@ pub async fn test_optional_string(){
     assert_eq!(3, rows.len());
 }
 
+
 #[tokio::test]
 pub async fn test_opt(){
-    use tests::*;
+    
    
-    let pool = Ydb::connect_env().await.unwrap();
+    let pool = connect_local().await.unwrap();
 
     let mut tr = pool.begin().await.unwrap();
     let conn = tr.acquire().await.unwrap();
