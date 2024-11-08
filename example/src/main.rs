@@ -9,7 +9,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_logs();
     
     let pool = Ydb::connect_env_opts(
-        |opt|opt.log_statements(LevelFilter::Info)
+        |opt|opt
+            .with_stats(ydb_sqlx::connection::StatsMode::Full)
+            .log_statements(LevelFilter::Info)
     ).await?;
 
     let row: (i32,) = sqlx::query_as("SELECT 1+1").fetch_one(&pool).await?;
@@ -27,10 +29,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         description: None
     };
 
-    sqlx::query("DELETE FROM test4 where id = $id")
+    let res = sqlx::query("DELETE FROM test4 where id = $id")
         .bind(("id",test_user_info.id))
         .execute(&pool)
         .await?;
+    info!("rows affected: {}", res.rows_affected());
 
 
     sqlx::query("INSERT INTO test4 (id, name, age, description) VALUES ( $arg_1, $arg_2, $age, $arg_3)")

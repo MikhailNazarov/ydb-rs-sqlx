@@ -104,9 +104,9 @@ pub struct YdbConnectOptions {
 }
 
 #[derive(Clone, Debug, Default)]
-pub enum StatsMode{
-    #[default]
+pub enum StatsMode{    
     None,
+    #[default]
     Basic,
     Full,
     Profile,
