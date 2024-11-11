@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(row.0, 2);
 
     let conn = pool.acquire().await?;
-    sqlx::query("CREATE TABLE test4 (id Uint64 NOT NULL, name Utf8, age UInt8 NOT NULL, description Utf8, updated_at DateTime, PRIMARY KEY (id))")
+    sqlx::query("CREATE TABLE test4 (id Uint64 NOT NULL, name Utf8, age UInt8 NOT NULL, description Utf8, updated_at Timestamp, PRIMARY KEY (id))")
         .execute(conn.schema())
         .await?;
 
@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("rows affected: {}", res.rows_affected());
 
 
-    sqlx::query("INSERT INTO test4 (id, name, age, description, updated_at) VALUES ( $arg_1, $arg_2, $age, $arg_3, CurrentUtcDate())")
+    sqlx::query("INSERT INTO test4 (id, name, age, description, updated_at) VALUES ( $arg_1, $arg_2, $age, $arg_3, CurrentUtcDateTime())")
         .bind(test_user_info.id)
         .bind(test_user_info.name)
         .bind(("age", test_user_info.age))
