@@ -42,17 +42,22 @@ impl YdbConnection {
                 };
 
                 let result = tr.query(query).await.map_err(err_ydb_to_sqlx)?;
-                if let Some(stats) = result.stats(){
-                    info!("{:?}", stats);
-                }
+                
+                let rows_affected = if let Some(stats) = result.stats(){
+                    
+                    //info!("{:?}", stats);
+                    stats.affected_rows
+                }else{
+                    0
+                };
                 let rows =result.rows_len();
                 
                 let results = result.into_results();
                 for _ in 1..=rows{
                     logger.increment_rows_returned();    
-                }
-                //todo: get rows and call increase_rows_affected
-                //logger.increase_rows_affected(rows_affected);
+                }              
+                
+                logger.increase_rows_affected(rows_affected);
                 Ok(Some(results))
             } else {                
                 self.client
@@ -75,12 +80,17 @@ impl YdbConnection {
                             logger.increment_rows_returned();    
                         }
                        
-                        if let Some(stats) = result.stats(){
-                            info!("{:?}", stats);
-                        }
+                        let rows_affected = if let Some(stats) = result.stats(){
+                    
+                           // info!("{:?}", stats);
+                            stats.affected_rows
+                        }else{
+                            0
+                        };
+                        
                         t.commit().await?;
-                        //todo: get rows and call increase_rows_affected
-                        //logger.increase_rows_affected(rows_affected);
+                        
+                        logger.increase_rows_affected(rows_affected);
                         Ok(Some(result.into_results()))
                     })
                     .await

@@ -4,6 +4,25 @@ This crate provides Sqlx integration for [ydb-rs-sdk](https://github.com/ydb-pla
 
 ## Basic examples
 
+### Starting local YDB in podman (or docker)
+
+```sh
+# get latest version from yandex
+
+podman pull cr.yandex/yc/yandex-docker-local-ydb:latest
+
+# run docker container
+
+podman run -d --rm --name ydb-local -h localhost \
+-p 2135:2135 -p 8765:8765 -p 2136:2136 \
+#-v $(pwd)/ydb_certs:/ydb_certs -v $(pwd)/ydb_data:/ydb_data \
+-e YDB_DEFAULT_LOG_LEVEL=NOTICE \
+-e GRPC_TLS_PORT=2135 -e GRPC_PORT=2136 -e MON_PORT=8765 \
+cr.yandex/yc/yandex-docker-local-ydb:latest
+
+
+```
+
 ### Connection from .env
 
 You could use `DATABASE_URL` or `YDB_CONNECTION_STRING` environment variable to connect to ydb server.

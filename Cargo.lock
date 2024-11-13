@@ -3307,7 +3307,7 @@ dependencies = [
 [[package]]
 name = "ydb"
 version = "0.9.4"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=aa312d9ccf425ad41ffa8062a823c39e8ec0a664#aa312d9ccf425ad41ffa8062a823c39e8ec0a664"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=66a95eca029693e576a6336e4b64a87c23d7ad62#66a95eca029693e576a6336e4b64a87c23d7ad62"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3346,7 +3346,7 @@ dependencies = [
 [[package]]
 name = "ydb-grpc"
 version = "0.1.0"
-source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=aa312d9ccf425ad41ffa8062a823c39e8ec0a664#aa312d9ccf425ad41ffa8062a823c39e8ec0a664"
+source = "git+https://github.com/MikhailNazarov/ydb-rs-sdk.git?rev=66a95eca029693e576a6336e4b64a87c23d7ad62#66a95eca029693e576a6336e4b64a87c23d7ad62"
 dependencies = [
  "pbjson",
  "pbjson-build",
