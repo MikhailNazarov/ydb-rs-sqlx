@@ -15,7 +15,7 @@ use crate::{
     arguments::{NamedArgument, YdbArgumentBuffer},
     database::Ydb,
     typeinfo::{DataType, YdbTypeInfo},
-    value::{YdbValue, YdbValueRef},
+    value::YdbValueRef,
 };
 
 macro_rules! ydb_type {

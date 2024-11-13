@@ -3,12 +3,12 @@
 pub mod connect;
 
 
-use tokio::net::lookup_host;
-use ydb_sqlx::database::Ydb;
-use sqlx::Acquire;
-use ydb_sqlx::with_name;
-use sqlx::pool;
-use ydb_sqlx::YdbPool;
+pub use tokio::net::lookup_host;
+pub use ydb_sqlx::database::Ydb;
+pub use sqlx::Acquire;
+pub use ydb_sqlx::with_name;
+pub use sqlx::pool;
+pub use ydb_sqlx::YdbPool;
 
 pub async fn connect_local() -> sqlx::Result<YdbPool> {
     let pool = ydb_sqlx::database::Ydb::connect_opts(
