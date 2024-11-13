@@ -4,7 +4,7 @@
 use console::style;
 use sqlx::migrate::Migrator;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
-use ydb_sqlx::connection::{YdbConnectOptions, YdbConnection};
+use ydb_sqlx::connection::YdbConnectOptions;
 use sqlx::ConnectOptions;
 
 #[tokio::main]

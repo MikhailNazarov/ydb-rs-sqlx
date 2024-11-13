@@ -10,7 +10,6 @@ use sqlx_core::executor::Executor;
 use sqlx_core::logger::QueryLogger;
 use sqlx_core::try_stream;
 use sqlx_core::Error;
-use tracing::info;
 use crate::error::err_ydb_or_customer_to_sqlx;
 
 use crate::error::err_ydb_to_sqlx;
