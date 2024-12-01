@@ -3,6 +3,7 @@ use tracing::info;
 use tracing_log::log::LevelFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use ydb_sqlx::database::Ydb;
+use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(row.0, 2);
 
     let conn = pool.acquire().await?;
-    sqlx::query("CREATE TABLE test4 (id Uint64 NOT NULL, name Utf8, age UInt8 NOT NULL, description Utf8, updated_at Timestamp, PRIMARY KEY (id))")
+    sqlx::query("CREATE TABLE test4 (id Uint64 NOT NULL, name Utf8, age UInt8 NOT NULL, user_role user_role NOT NULL, description Utf8, updated_at Timestamp, PRIMARY KEY (id))")
         .execute(conn.schema())
         .await?;
 
@@ -27,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         id: 13u64,
         name: "test".to_string(),
         age: 32u8,
+        user_role: UserRole::User,
         description: None,
         updated_at: None
     };
@@ -38,10 +40,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("rows affected: {}", res.rows_affected());
 
 
-    sqlx::query("INSERT INTO test4 (id, name, age, description, updated_at) VALUES ( $arg_1, $arg_2, $age, $arg_3, CurrentUtcDateTime())")
+    sqlx::query("INSERT INTO test4 (id, name, age, user_role, description, updated_at) VALUES ( $arg_1, $arg_2, $age, $arg_3, $arg_4, CurrentUtcDateTime())")
         .bind(test_user_info.id)
         .bind(test_user_info.name)
         .bind(("age", test_user_info.age))
+        .bind(test_user_info.user_role)
         .bind(test_user_info.description)
         .execute(&pool)
         .await?;
@@ -50,6 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         sqlx::query_as("SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
             .bind(("age", 30))
             .bind(40)
+            .bind(UserRole::Normal)
             .fetch_all(&pool)
             .await?;
 
@@ -59,12 +63,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+//#[derive(sqlx::FromRow, Serialize_repr, Deserialize_repr, PartialEq, Debug)]
+//#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, PartialOrd, sqlx::Type, Deserialize, Serialize)]
+#[sqlx(type_name = "user_role", rename_all = "lowercase")]
+pub enum UserRole {
+    Admin,
+    User,
+}
+
 #[allow(unused)]
 #[derive(sqlx::FromRow)]
 struct UserInfo {
     id: u64,
     name: String,
     age: u8,
+    user_role: UserRole,
     description: Option<String>,
     updated_at: Option<SystemTime>
 }
