@@ -53,7 +53,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         sqlx::query_as("SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
             .bind(("age", 30))
             .bind(40)
-            .bind(UserRole::Normal)
             .fetch_all(&pool)
             .await?;
 
