@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .execute(conn.schema())
         .await?;
 
-    let test_user_info = UserInfo {
+    let test_user_info = UserRole {
         id: 13u64,
         name: "test".to_string(),
         age: 32u8,
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .execute(&pool)
         .await?;
 
-    let users: Vec<UserInfo> =
+    let users: Vec<UserRole> =
         sqlx::query_as("SELECT * FROM test4 WHERE age > $age AND age < $arg_1")
             .bind(("age", 30))
             .bind(40)
@@ -74,7 +74,7 @@ pub enum UserRole {
 
 #[allow(unused)]
 #[derive(sqlx::FromRow)]
-struct UserInfo {
+struct UserRole {
     id: u64,
     name: String,
     age: u8,
