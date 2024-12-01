@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.22", features = ["full"] }
-sqlx = { version = "0.8", features = ["macros", "any", "runtime-tokio-rustls", "postgres"] } # "postgres"  temporary for test enums
+sqlx = { version = "0.8", features = ["macros", "any", "runtime-tokio-rustls", "postgres"] } #"postgres"  temporary for test enums
 sqlx-core = { version = "0.8" }
 tracing-subscriber = "0.3"
 tracing = "0.1"
