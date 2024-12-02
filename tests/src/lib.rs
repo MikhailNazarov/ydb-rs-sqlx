@@ -76,6 +76,45 @@ pub async fn test_optional_string(){
     assert_eq!(3, rows.len());
 }
 
+pub async fn test_optional_json() {
+    let pool = connect_local().await.unwrap();
+
+    let mut tr = pool.begin().await.unwrap();
+    let conn = tr.acquire().await.unwrap();
+
+    #[derive(Clone, Default)]
+    pub struct UserData {
+        pub pet: String,
+    }
+    let user_data = UserData {
+        pet: "Elephant".to_string(),
+    };
+
+    sqlx::query(r#"
+        CREATE TABLE IF NOT EXISTS test_opt(
+            id Int32 NOT NULL,
+            json Json,
+            PRIMARY KEY (id)
+        )
+    "#).execute(conn.schema()).await.unwrap();
+
+    for id in 1..3 {
+        sqlx::query(r#"
+            insert into test_opt(id, json) values
+            VALUES ( $arg_1, $arg_2)
+        "#).bind(id).bind(user_data.clone()).execute(&mut *conn).await.unwrap();
+    }
+    {
+    let row = sqlx::query_as::<_,(i32, Option<UserData>)>(r#"
+        select * from test_opt where id = $id
+    "#).bind(("id", 1))
+    .fetch_one(&mut *conn).await.unwrap();
+    
+    assert_eq!(row.1, Some(user_data));
+    
+    }
+
+}
 
 #[tokio::test]
 pub async fn test_opt(){
