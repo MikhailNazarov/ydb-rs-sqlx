@@ -9,14 +9,14 @@ rust-version = "1.77"
 description = "Sqlx intergration for ydb-rs-sdk"
 
 [dependencies]
-thiserror = "1"
+thiserror = "2.0"
 async-trait = "0.1"
 futures-util = "0.3"
-itertools = "0.13"
+itertools = "0.14"
 sqlx-core = { version = "0.8" }
 tracing = "0.1"
-ydb = { git = "https://github.com/MikhailNazarov/ydb-rs-sdk.git", rev = "66a95eca029693e576a6336e4b64a87c23d7ad62" }
-url = "2.2"
+ydb = { git = "https://github.com/MikhailNazarov/ydb-rs-sdk.git", rev = "79d97a8c2e8d3917b33412ff3f8daa35bb047623" }
+url = "2.5"
 futures-core = "0.3"
 futures = "0.3"
 rustring_builder = "0.2"
